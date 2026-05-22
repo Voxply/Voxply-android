@@ -1,0 +1,100 @@
+name: Android build
+
+on:
+  push:
+    branches: [main]
+  tags:
+    - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: >-
+            build-tools;36.1.0
+            platforms;android-36
+            ndk;27.0.12077973
+
+      - name: Set up Rust (stable, Android targets)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: voxply-android/src-tauri
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: voxply-android/package-lock.json
+
+      - name: Restore Gradle cache
+        id: gradle-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('voxply-android/src-tauri/gen/android/gradle*') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Install npm dependencies
+        working-directory: voxply-android
+        run: npm ci
+
+      - name: TypeScript check
+        working-directory: voxply-android
+        run: npx tsc --noEmit
+
+      - name: Decode release keystore
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/voxply.keystore
+
+      - name: Build APK
+        working-directory: voxply-android
+        run: >-
+          cargo tauri android build
+          --target aarch64
+          --target armv7
+        env:
+          TAURI_ANDROID_KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && '/tmp/voxply.keystore' || '' }}
+          TAURI_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TAURI_ANDROID_KEY_ALIAS: voxply
+          TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Save Gradle cache
+        if: steps.gradle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('voxply-android/src-tauri/gen/android/gradle*') }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxply-android-apk
+          path: voxply-android/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
