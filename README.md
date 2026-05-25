@@ -5,8 +5,8 @@ A mobile-first UI sharing the same hub API as the desktop client, packaged
 as a native Android APK via Tauri.
 
 Part of the Voxply project — see the
-[docs repo](https://github.com/Voxply/Voxply) for architecture,
-API spec, and roadmap.
+[docs repo](https://github.com/Voxply/Voxply) for architecture and API spec,
+and the [roadmap](https://github.com/Voxply/Voxply/blob/main/ROADMAP.md) for what's next.
 
 ## Technologies
 
