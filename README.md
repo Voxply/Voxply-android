@@ -1,11 +1,11 @@
 # Voxply-android
 
-Android client for the [Voxply](https://github.com/YOUR_ORG/Voxply) platform.
+Android client for the [Voxply](https://github.com/Voxply/Voxply) platform.
 A mobile-first UI sharing the same hub API as the desktop client, packaged
 as a native Android APK via Tauri.
 
 Part of the Voxply project — see the
-[docs repo](https://github.com/YOUR_ORG/Voxply) for architecture,
+[docs repo](https://github.com/Voxply/Voxply) for architecture,
 API spec, and roadmap.
 
 ## Technologies
@@ -21,7 +21,7 @@ API spec, and roadmap.
 
 Requires [Node 20+](https://nodejs.org), the
 [Tauri prerequisites](https://tauri.app/start/prerequisites/), and
-Android SDK + NDK (see [install-android.md](https://github.com/YOUR_ORG/Voxply/blob/main/docs/install-android.md)).
+Android SDK + NDK (see [install-android.md](https://github.com/Voxply/Voxply/blob/main/docs/install-android.md)).
 
 ```bash
 cd voxply-android
