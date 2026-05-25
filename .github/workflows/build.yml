@@ -36,14 +36,14 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: voxply-android/src-tauri
+          workspaces: android/src-tauri
 
       - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: voxply-android/package-lock.json
+          cache-dependency-path: android/package-lock.json
 
       - name: Restore Gradle cache
         id: gradle-cache
@@ -52,16 +52,16 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('voxply-android/src-tauri/gen/android/gradle*') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/src-tauri/gen/android/gradle*') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
       - name: Install npm dependencies
-        working-directory: voxply-android
+        working-directory: android
         run: npm ci
 
       - name: TypeScript check
-        working-directory: voxply-android
+        working-directory: android
         run: npx tsc --noEmit
 
       - name: Decode release keystore
@@ -72,7 +72,7 @@ jobs:
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/voxply.keystore
 
       - name: Build APK
-        working-directory: voxply-android
+        working-directory: android
         run: >-
           cargo tauri android build
           --target aarch64
@@ -90,11 +90,11 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('voxply-android/src-tauri/gen/android/gradle*') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/src-tauri/gen/android/gradle*') }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: voxply-android-apk
-          path: voxply-android/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          name: android-apk
+          path: android/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: warn

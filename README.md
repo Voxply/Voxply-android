@@ -24,7 +24,7 @@ Requires [Node 20+](https://nodejs.org), the
 Android SDK + NDK (see [install-android.md](https://github.com/Voxply/Voxply/blob/main/docs/install-android.md)).
 
 ```bash
-cd voxply-android
+cd android
 npm install
 cargo tauri android dev
 ```
@@ -32,11 +32,11 @@ cargo tauri android dev
 ## Building a release APK
 
 ```bash
-cd voxply-android
+cd android
 cargo tauri android build --target aarch64 --target armv7
 ```
 
-See [`SIGNING.md`](voxply-android/SIGNING.md) for keystore configuration.
+See [`SIGNING.md`](android/SIGNING.md) for keystore configuration.
 
 ## CI
 
