@@ -17,19 +17,6 @@ API spec, and roadmap.
 - **Gradle** / **Android Gradle Plugin 8** — Android build system
 - **Web Crypto API** — Ed25519 identity (no native crypto dep)
 
-## Repository structure
-
-```
-voxply-android/
-  src/
-    identity/            TypeScript Ed25519 + BIP39 (Web Crypto API)
-    platform-android/    Android-specific storage adapter
-    App.tsx              Root component
-    styles.css
-  src-tauri/             Tauri Android configuration and Rust glue
-  SIGNING.md             Release keystore setup instructions
-```
-
 ## Quick start
 
 Requires [Node 20+](https://nodejs.org), the
