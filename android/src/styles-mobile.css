@@ -29,3 +29,13 @@ textarea,
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+.embed-field--inline {
+  flex: 0 0 100%;
+  min-width: unset;
+}
+
+.component-btn,
+.component-select {
+  min-height: 44px;
+}

@@ -16,7 +16,6 @@ import type {
   BanInfo,
   InviteInfo,
   PendingUser,
-  InstalledGame,
   Conversation,
   DmMessage,
   AllianceInfo,
@@ -70,7 +69,7 @@ import { open as openFilePicker } from "@tauri-apps/plugin-dialog";
 // ---- Types ----
 
 type Theme = "calm" | "classic" | "linear" | "light";
-type View = "channels" | "dms" | "game";
+type View = "channels" | "dms";
 type HubPreview =
   | { state: "idle" }
   | { state: "loading" }
@@ -176,7 +175,6 @@ export default function App() {
   const [pingByHub, setPingByHub] = useState<Record<string, number | null>>({});
   const [hubDropdownOpen, setHubDropdownOpen] = useState(false);
   const [hubUrl, setHubUrl] = useState("http://localhost:3000");
-  const [inviteCode, setInviteCode] = useState("");
   const [hubPreview, setHubPreview] = useState<HubPreview>({ state: "idle" });
   const [addingHub, setAddingHub] = useState(false);
   const [addHubError, setAddHubError] = useState<string | null>(null);
@@ -188,7 +186,6 @@ export default function App() {
   const [meInfo, setMeInfo] = useState<MeInfo | null>(null);
   const [voicePartByChannel, setVoicePartByChannel] = useState<Record<string, VoiceParticipant[]>>({});
   const [voiceActiveUsers] = useState<Set<string>>(new Set());
-  const [installedGames, setInstalledGames] = useState<InstalledGame[]>([]);
   const [userAlliances, setUserAlliances] = useState<AllianceInfo[]>([]);
   const [allianceChannels] = useState<Record<string, AllianceSharedChannel[]>>({});
 
@@ -196,7 +193,6 @@ export default function App() {
   const [view, setView] = useState<View>("channels");
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [selectedGame, setSelectedGame] = useState<InstalledGame | null>(null);
 
   // === Messages ===
   const [messages, setMessages] = useState<Message[]>([]);
@@ -225,7 +221,6 @@ export default function App() {
   const [unreadDms, setUnreadDms] = useState<Record<string, boolean>>({});
   const [hubNotifyMode, setHubNotifyMode] = useState<Record<string, NotifyMode>>({});
   const [channelNotifyMode, setChannelNotifyMode] = useState<Record<string, Record<string, NotifyMode>>>({});
-  const [pinnedChannels, setPinnedChannels] = useState<Record<string, Record<string, boolean>>>({});
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, Record<string, boolean>>>({});
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
 
@@ -434,19 +429,17 @@ export default function App() {
     if (loadingHub.current) return;
     loadingHub.current = true;
     try {
-      const [ch, usr, me, convs, games, alliances] = await Promise.allSettled([
+      const [ch, usr, me, convs, alliances] = await Promise.allSettled([
         hubFetch("/channels").then((r) => r.json() as Promise<Channel[]>),
         hubFetch("/users").then((r) => r.json() as Promise<User[]>),
         hubFetch("/me").then((r) => r.json() as Promise<MeInfo>),
         hubFetch("/conversations").then((r) => r.json() as Promise<Conversation[]>),
-        hubFetch("/hub/games").then((r) => r.json() as Promise<InstalledGame[]>),
         hubFetch("/alliances").then((r) => r.json() as Promise<AllianceInfo[]>).catch(() => [] as AllianceInfo[]),
       ]);
       if (ch.status === "fulfilled") setChannels(ch.value);
       if (usr.status === "fulfilled") setUsers(usr.value);
       if (me.status === "fulfilled") setMeInfo(me.value);
       if (convs.status === "fulfilled") setConversations(convs.value);
-      if (games.status === "fulfilled") setInstalledGames(games.value);
       if (alliances.status === "fulfilled") setUserAlliances(alliances.value);
     } finally {
       loadingHub.current = false;
@@ -507,12 +500,11 @@ export default function App() {
     setAddingHub(true);
     setAddHubError(null);
     try {
-      const hub = await addHub(hubUrl, stableHandlers, { invite_code: inviteCode || undefined });
+      const hub = await addHub(hubUrl, stableHandlers);
       setHubs(listHubs());
       setActiveHubIdState(hub.hub_id);
       setShowAddHub(false);
       setHubUrl("http://localhost:3000");
-      setInviteCode("");
       setHubPreview({ state: "idle" });
       await loadHubData();
       publishDhKey().catch(() => {});
@@ -696,19 +688,14 @@ export default function App() {
 
   const myRoles = useMemo(() => meInfo?.roles ?? [], [meInfo]);
 
-  const canManageGames = useMemo(
-    () => myRoles.some((r) => r.permissions?.includes("manage_games") || r.permissions?.includes("manage_hub")),
-    [myRoles],
-  );
-
   const knownDisplayNames = useMemo(
     () => new Set(users.map((u) => u.display_name).filter(Boolean) as string[]),
     [users],
   );
 
   const channelTree = useMemo<TreeNode[]>(
-    () => buildChannelTree(channels, activeHubId ? (pinnedChannels[activeHubId] ?? {}) : {}),
-    [channels, activeHubId, pinnedChannels],
+    () => buildChannelTree(channels),
+    [channels],
   );
 
   // === Render ===
@@ -750,7 +737,6 @@ export default function App() {
           hubs={hubs}
           channels={channels}
           selectedChannel={selectedChannel}
-          pinnedChannels={pinnedChannels}
           unreadByChannel={unreadByChannel}
           collapsedCategories={collapsedCategories}
           voicePartByChannel={voicePartByChannel}
@@ -763,15 +749,14 @@ export default function App() {
           isAdmin={isAdmin}
           hubNotifyMode={hubNotifyMode}
           hubDropdownOpen={hubDropdownOpen}
+          hideSilenced={false}
+          silencedChannelIds={new Set()}
           userAlliances={userAlliances}
           allianceChannels={allianceChannels}
           selectedAllianceChannel={null}
           conversations={conversations}
           selectedConversation={selectedConversation}
           unreadDms={unreadDms}
-          installedGames={installedGames}
-          selectedGame={selectedGame}
-          canManageGames={canManageGames}
           channelTree={channelTree}
           effectiveNotifyMode={effectiveNotifyMode}
           onToggleCategoryCollapsed={(hubId, catId) =>
@@ -792,17 +777,16 @@ export default function App() {
           onOpenCreateChannel={() => {}}
           onSelectChannel={handleSelectChannel}
           onChannelContextMenu={() => {}}
+          onOpenChannelSettings={() => {}}
           onVoiceJoin={() => showVoiceNotAvailable()}
           onVoiceLeave={() => {}}
-          onLaunchGame={(g) => { setSelectedGame(g); setView("game"); }}
-          onOpenEditGame={() => {}}
           onSelectAllianceChannel={() => {}}
           onSelectConversation={handleSelectConversation}
           onOpenFriends={() => {}}
           onToggleSelfMute={() => {}}
           onToggleSelfDeafen={() => {}}
           onOpenSettings={() => {}}
-          onSetShowInstallGame={() => {}}
+          onToggleHideSilenced={() => {}}
           onDragEnd={() => {}}
           sharing={false}
           onScreenShare={() => {}}
@@ -848,7 +832,6 @@ export default function App() {
         selectedChannel={selectedChannel}
         selectedConversation={selectedConversation}
         selectedAllianceChannel={null}
-        selectedGame={selectedGame}
         messages={messages}
         searchResults={searchResults}
         searchOpen={searchOpen}
@@ -872,6 +855,9 @@ export default function App() {
         reconnectingHubs={reconnectingHubs}
         memberSidebarHidden={memberSidebarHidden}
         voiceActiveUsers={voiceActiveUsers}
+        voiceChannelId={null}
+        onVoiceJoin={() => showVoiceNotAvailable()}
+        onVoiceLeave={() => {}}
         inputText={inputText}
         typingByKey={typingByKey}
         dmTypingByKey={dmTypingByKey}
@@ -879,7 +865,6 @@ export default function App() {
         messagesContainerRef={messagesContainerRef}
         messageInputRef={messageInputRef}
         onReconnect={() => {}}
-        onCloseGame={() => setSelectedGame(null)}
         onToggleReaction={handleToggleReaction}
         onSetReplyTarget={setReplyTarget}
         onSaveEdit={handleSaveEdit}
@@ -912,6 +897,9 @@ export default function App() {
         onError={() => {}}
         activeScreenShares={[]}
         screenShareViewerRef={screenShareViewerRef}
+        sharing={false}
+        shareKbps={0}
+        onStopShare={() => {}}
       />
 
       {showAddHub && (
@@ -919,8 +907,6 @@ export default function App() {
           hubUrl={hubUrl}
           onHubUrlChange={(v) => { setHubUrl(v); setHubPreview({ state: "idle" }); setAddHubError(null); }}
           hubPreview={hubPreview}
-          inviteCode={inviteCode}
-          onInviteCodeChange={setInviteCode}
           loading={addingHub}
           error={addHubError}
           onAdd={handleAddHub}
