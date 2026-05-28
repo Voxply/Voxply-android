@@ -60,6 +60,7 @@ import {
   sendDm,
   publishDhKey,
 } from "@platform";
+import { sendComponentInteraction } from "@platform";
 import { loadIdentity, saveIdentity, generateIdentity } from "./platform-android/identity-store";
 import { publicKeyHex, signBytes, dhKeypairFromSeed } from "@identity/crypto";
 import { seedToPhrase, phraseToSeed, validatePhrase } from "@identity/recovery";
@@ -900,6 +901,7 @@ export default function App() {
         sharing={false}
         shareKbps={0}
         onStopShare={() => {}}
+        onComponentInteract={sendComponentInteraction}
       />
 
       {showAddHub && (
