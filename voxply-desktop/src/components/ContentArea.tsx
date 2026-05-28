@@ -12,7 +12,11 @@ import type {
   AllianceSharedChannel,
   VoiceParticipant,
   ActiveStream,
+  InstalledGame,
 } from "../types";
+import { GamePicker } from "./GamePicker";
+import { GameModal } from "./GameModal";
+import { GamepadIcon } from "./Icons";
 import { MessageEmbeds } from "./MessageEmbeds";
 import { MessageComponents } from "./MessageComponents";
 import { ScreenShareViewer } from "./ScreenShareViewer";
@@ -84,6 +88,8 @@ interface Props {
   voiceChannelId: string | null;
   onVoiceJoin: () => void;
   onVoiceLeave: () => void;
+  installedGames: InstalledGame[];
+  myAvatar: string | null;
   inputText: string;
   typingByKey: Record<string, TypingEntry>;
   dmTypingByKey: Record<string, TypingEntry>;
@@ -139,6 +145,7 @@ export function ContentArea({
   isAdmin, myRoles, editingMessageId, editingDraft, replyTarget,
   pendingAttachments, stickToBottom, newWhileScrolledUp,
   hubConnected, reconnectingHubs, memberSidebarHidden, voiceActiveUsers, voiceChannelId, onVoiceJoin, onVoiceLeave,
+  installedGames, myAvatar,
   inputText, typingByKey, dmTypingByKey,
   messagesEndRef, messagesContainerRef, messageInputRef,
   onReconnect, onToggleReaction, onSetReplyTarget,
@@ -159,6 +166,8 @@ export function ContentArea({
   const [slashSuggestions, setSlashSuggestions] = useState<SlashCommandEntry[]>([]);
   const [slashSelectedIdx, setSlashSelectedIdx] = useState(0);
   const [botCard, setBotCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeGame, setActiveGame] = useState<InstalledGame | null>(null);
 
   const openBotCard = useCallback((pubkey: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -400,6 +409,15 @@ export function ContentArea({
                     🎙 Join Voice
                   </button>
                 )
+              )}
+              {installedGames.length > 0 && (
+                <button
+                  onClick={() => setPickerOpen(true)}
+                  className="btn-icon-header"
+                  title="Activities"
+                >
+                  <GamepadIcon size={16} />
+                </button>
               )}
               <button
                 onClick={() => searchOpen ? onCloseSearch() : onSetSearchOpen(true)}
@@ -821,6 +839,25 @@ export function ContentArea({
           hubUrl={activeHub.hub_url}
           anchorRect={botCard.rect}
           onClose={() => setBotCard(null)}
+        />
+      )}
+
+      {pickerOpen && (
+        <GamePicker
+          games={installedGames}
+          onSelect={(game) => { setPickerOpen(false); setActiveGame(game); }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      {activeGame && (
+        <GameModal
+          game={activeGame}
+          theme={theme}
+          publicKey={publicKey}
+          displayName={myDisplayName}
+          avatar={myAvatar}
+          onClose={() => setActiveGame(null)}
         />
       )}
     </>
