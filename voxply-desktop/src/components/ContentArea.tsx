@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type {
   Channel,
   Hub,
@@ -163,6 +164,7 @@ export function ContentArea({
   sharing, shareKbps, onStopShare,
   onComponentInteract,
 }: Props) {
+  const { t } = useTranslation();
   const [slashSuggestions, setSlashSuggestions] = useState<SlashCommandEntry[]>([]);
   const [slashSelectedIdx, setSlashSelectedIdx] = useState(0);
   const [botCard, setBotCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
@@ -241,13 +243,13 @@ export function ContentArea({
       <div className="content">
         {activeHubId && hubConnected[activeHubId] === false && (
           <div className="reconnect-banner">
-            <span>{reconnectingHubs[activeHubId] ? "Reconnecting…" : "Disconnected from hub."}</span>
+            <span>{reconnectingHubs[activeHubId] ? t("reconnect.reconnecting") : t("reconnect.disconnected")}</span>
             <button
               className="btn-small"
               onClick={onReconnect}
               disabled={!!reconnectingHubs[activeHubId]}
             >
-              {reconnectingHubs[activeHubId] ? "Working…" : "Reconnect"}
+              {reconnectingHubs[activeHubId] ? t("reconnect.working") : t("reconnect.button")}
             </button>
           </div>
         )}
