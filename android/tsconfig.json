@@ -16,7 +16,8 @@
       "@shared/hooks/*": ["../voxply-desktop/src/hooks/*"],
       "@shared/constants": ["../voxply-desktop/src/constants"],
       "@platform": ["../voxply-web/src/platform/index"],
-      "@identity/*": ["../voxply-web/src/identity/*"]
+      "@identity/*": ["../voxply-web/src/identity/*"],
+      "@voxply/i18n": ["../voxply-web/i18n/index.ts"]
     }
   },
   "include": [
