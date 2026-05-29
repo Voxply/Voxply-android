@@ -38,9 +38,11 @@ export function SortableChannelItem({
   participants,
   isCurrentVoiceChannel,
   style,
+  tabIndex,
   onClick,
   onDoubleClick,
   onContextMenu,
+  onKeyDown,
   onSettings,
 }: {
   channel: Channel;
@@ -50,9 +52,11 @@ export function SortableChannelItem({
   participants: VoiceParticipant[];
   isCurrentVoiceChannel: boolean;
   style?: React.CSSProperties;
+  tabIndex?: number;
   onClick: () => void;
   onDoubleClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
   onSettings?: (e: React.MouseEvent) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -61,6 +65,8 @@ export function SortableChannelItem({
   return (
     <li
       ref={setNodeRef}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
       className={`channel-item-wrap ${isDragging ? "dragging" : ""}`}
       style={{
         transform: CSS.Transform.toString(transform),
@@ -84,14 +90,15 @@ export function SortableChannelItem({
         {...attributes}
         {...listeners}
       >
-        {unread && <span className="channel-unread-dot" />}
+        {unread && <span className="channel-unread-dot" aria-hidden="true" />}
         <ChannelIcon icon={channel.icon} customIconSvg={channel.custom_icon_svg} />
         {" "}{channel.name}
-        {muted && <span className="channel-muted-icon" title="Muted">🔕</span>}
+        {muted && <span className="channel-muted-icon" title="Muted" aria-hidden="true">🔕</span>}
         {participants.length > 0 && (
           <span
             className="channel-voice-badge"
             title={`${participants.length} in voice`}
+            aria-hidden="true"
           >
             🎙️ {participants.length}
           </span>
@@ -115,7 +122,7 @@ export function SortableChannelItem({
               className="channel-participant"
               title={p.public_key}
             >
-              <span className="channel-participant-icon">🎙️</span>
+              <span className="channel-participant-icon" aria-hidden="true">🎙️</span>
               {p.display_name || p.public_key.slice(0, 12)}
             </li>
           ))}
@@ -132,8 +139,10 @@ export function SortableCategoryItem({
   childCount,
   style,
   isDragTarget,
+  tabIndex,
   onToggleCollapsed,
   onContextMenu,
+  onKeyDown,
   onAdd,
   onSettings,
 }: {
@@ -143,8 +152,10 @@ export function SortableCategoryItem({
   childCount: number;
   style?: React.CSSProperties;
   isDragTarget?: boolean;
+  tabIndex?: number;
   onToggleCollapsed: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
   onAdd: () => void;
   onSettings?: (e: React.MouseEvent) => void;
 }) {
@@ -153,7 +164,11 @@ export function SortableCategoryItem({
 
   return (
     <li
+      role="group"
+      aria-label={channel.name}
       ref={setNodeRef}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
       className={`category-group ${isDragging ? "dragging" : ""}`}
       style={{
         transform: isDragTarget ? undefined : CSS.Transform.toString(transform),
@@ -174,6 +189,7 @@ export function SortableCategoryItem({
       >
         <button
           className="category-chevron"
+          aria-expanded={!collapsed}
           onClick={(e) => {
             e.stopPropagation();
             onToggleCollapsed();
@@ -187,7 +203,7 @@ export function SortableCategoryItem({
         )}
         <span className="category-name">{channel.name.toUpperCase()}</span>
         {collapsed && childCount > 0 && (
-          <span className="category-count">{childCount}</span>
+          <span className="category-count" aria-hidden="true">{childCount}</span>
         )}
         <button
           className="btn-icon-small"

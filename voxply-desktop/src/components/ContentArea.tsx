@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import type {
@@ -89,8 +89,8 @@ interface Props {
   voiceChannelId: string | null;
   onVoiceJoin: () => void;
   onVoiceLeave: () => void;
-  installedGames: InstalledGame[];
-  myAvatar: string | null;
+  installedGames?: InstalledGame[];
+  myAvatar?: string | null;
   inputText: string;
   typingByKey: Record<string, TypingEntry>;
   dmTypingByKey: Record<string, TypingEntry>;
@@ -146,7 +146,8 @@ export function ContentArea({
   isAdmin, myRoles, editingMessageId, editingDraft, replyTarget,
   pendingAttachments, stickToBottom, newWhileScrolledUp,
   hubConnected, reconnectingHubs, memberSidebarHidden, voiceActiveUsers, voiceChannelId, onVoiceJoin, onVoiceLeave,
-  installedGames, myAvatar,
+  installedGames = [],
+  myAvatar = null,
   inputText, typingByKey, dmTypingByKey,
   messagesEndRef, messagesContainerRef, messageInputRef,
   onReconnect, onToggleReaction, onSetReplyTarget,
@@ -170,6 +171,29 @@ export function ContentArea({
   const [botCard, setBotCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeGame, setActiveGame] = useState<InstalledGame | null>(null);
+  const [focusedMessageIndex, setFocusedMessageIndex] = useState<number>(-1);
+  const messageRowRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const [liveAnnouncement, setLiveAnnouncement] = useState('');
+  const announceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingAnnouncementsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    if (document.hidden) return;
+    const latestMsg = messages[messages.length - 1];
+    if (!latestMsg) return;
+    pendingAnnouncementsRef.current.push(`${latestMsg.sender_name ?? 'Unknown'}: ${latestMsg.content}`);
+    if (announceTimerRef.current) return;
+    announceTimerRef.current = setTimeout(() => {
+      const batch = pendingAnnouncementsRef.current.splice(0);
+      if (batch.length === 1) {
+        setLiveAnnouncement(batch[0]);
+      } else {
+        setLiveAnnouncement(`${batch.length} new messages`);
+      }
+      announceTimerRef.current = null;
+    }, 2000);
+  }, [messages]);
 
   const openBotCard = useCallback((pubkey: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -208,6 +232,24 @@ export function ContentArea({
     setSlashSelectedIdx(0);
   }
 
+  function handleMessageKeyDown(e: React.KeyboardEvent<HTMLDivElement>, index: number, displayedMessages: typeof messages) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = Math.min(index + 1, displayedMessages.length - 1);
+      setFocusedMessageIndex(next);
+      messageRowRefs.current[next]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = Math.max(index - 1, 0);
+      setFocusedMessageIndex(prev);
+      messageRowRefs.current[prev]?.focus();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setFocusedMessageIndex(-1);
+      messageInputRef.current?.focus();
+    }
+  }
+
   function handleSlashKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (slashSuggestions.length > 0) {
       if (e.key === "ArrowDown") {
@@ -240,7 +282,16 @@ export function ContentArea({
 
   return (
     <>
-      <div className="content">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-relevant="additions"
+        className="sr-only"
+      >
+        {liveAnnouncement}
+      </div>
+      <main className="content">
         {activeHubId && hubConnected[activeHubId] === false && (
           <div className="reconnect-banner">
             <span>{reconnectingHubs[activeHubId] ? t("reconnect.reconnecting") : t("reconnect.disconnected")}</span>
@@ -512,19 +563,23 @@ export function ContentArea({
                   const isMentioned = m.sender !== publicKey && mentionsName(m.content, myDisplayName);
                   const isEphemeral = !!m.visible_to_pubkey && m.visible_to_pubkey === publicKey;
                   const actionText = meAction(m.content);
+                  const displayedMessages = (searchResults ?? messages).filter((msg) => !blockedUsers.has(msg.sender));
                   if (actionText !== null) {
                     return (
                       <React.Fragment key={m.id}>
                         {showSeparator && (
-                          <div className="day-separator">
+                          <div className="day-separator" aria-hidden="true">
                             <span className="day-separator-label">{formatDayLabel(m.created_at)}</span>
                           </div>
                         )}
                         <div
+                          ref={(el) => { messageRowRefs.current[i] = el; }}
                           id={`msg-${m.id}`}
-                          className={`message message-action ${isMentioned ? "message-mentioned" : ""} ${isEphemeral ? "message-ephemeral" : ""}`}
+                          tabIndex={focusedMessageIndex === i ? 0 : -1}
+                          onKeyDown={(e) => handleMessageKeyDown(e, i, displayedMessages)}
+                          className={`message message-action message-row ${isMentioned ? "message-mentioned" : ""} ${isEphemeral ? "message-ephemeral" : ""}`}
                         >
-                          <span className="action-asterisk">*</span>
+                          <span className="action-asterisk" aria-hidden="true">*</span>
                           <span className="message-sender" style={{ color: colorForKey(m.sender) }}>
                             {senderLabel}
                           </span>
@@ -541,13 +596,16 @@ export function ContentArea({
                   return (
                     <React.Fragment key={m.id}>
                       {showSeparator && (
-                        <div className="day-separator">
+                        <div className="day-separator" aria-hidden="true">
                           <span className="day-separator-label">{formatDayLabel(m.created_at)}</span>
                         </div>
                       )}
                       <div
+                        ref={(el) => { messageRowRefs.current[i] = el; }}
                         id={`msg-${m.id}`}
-                        className={`message ${isMentioned ? "message-mentioned" : ""} ${isEphemeral ? "message-ephemeral" : ""}`}
+                        tabIndex={focusedMessageIndex === i ? 0 : -1}
+                        onKeyDown={(e) => handleMessageKeyDown(e, i, displayedMessages)}
+                        className={`message message-row ${isMentioned ? "message-mentioned" : ""} ${isEphemeral ? "message-ephemeral" : ""}`}
                       >
                         {m.reply_to && (
                           <div
@@ -819,10 +877,10 @@ export function ContentArea({
         ) : (
           <div className="no-channel"><p>Select a channel to start chatting</p></div>
         )}
-      </div>
+      </main>
 
       {view === "channels" && !memberSidebarHidden && (
-        <aside className="user-list-sidebar">
+        <aside className="user-list-sidebar" aria-label="Members">
           <UserListGrouped
             users={users}
             inVoice={voiceActiveUsers}
