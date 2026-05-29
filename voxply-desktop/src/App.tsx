@@ -146,6 +146,37 @@ function App() {
     });
   }
 
+  // Ignored users: pubkey set. Client-only; messages collapse but DMs/mentions
+  // still work. Not synced to any server in Phase 1.
+  const [ignoredUsers, setIgnoredUsers] = useState<Set<string>>(new Set());
+
+  function toggleIgnoreUser(pubkey: string) {
+    setIgnoredUsers((prev) => {
+      const next = new Set(prev);
+      if (next.has(pubkey)) next.delete(pubkey);
+      else next.add(pubkey);
+      try {
+        localStorage.setItem("voxply.ignoredUsers", JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  }
+
+  // DND: quick-toggle + optional schedule. Local-only in Phase 1.
+  const [dndEnabled, setDndEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem("voxply.dndEnabled") === "1"; }
+    catch { return false; }
+  });
+
+  function toggleDnd() {
+    setDndEnabled((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("voxply.dndEnabled", next ? "1" : "0"); }
+      catch {}
+      return next;
+    });
+  }
+
 
   // Collapsed categories: hub_id -> { category_id: true }. Persisted so a
   // folded category stays folded across restarts. Categories not in the
@@ -327,6 +358,14 @@ function App() {
     invoke<string[]>("load_blocked_users")
       .then((s) => setBlockedUsers(new Set(s ?? [])))
       .catch(console.error);
+  }, []);
+
+  // Hydrate ignored users from localStorage on launch.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("voxply.ignoredUsers");
+      if (raw) setIgnoredUsers(new Set(JSON.parse(raw)));
+    } catch {}
   }, []);
 
 
@@ -2932,6 +2971,21 @@ function App() {
             onShowRecovery={handleShowRecovery}
             onRecoverIdentity={handleRecoverIdentity}
             onClearLocalData={handleClearLocalData}
+            blockedEntries={Array.from(blockedUsers).map((p) => ({ pubkey: p, since: 0 }))}
+            ignoredEntries={Array.from(ignoredUsers).map((p) => ({ pubkey: p, since: 0 }))}
+            onUnblock={(p) => toggleBlockUser(p)}
+            onUnignore={(p) => toggleIgnoreUser(p)}
+            dnd={{ enabled: dndEnabled, schedule: null }}
+            onDndChange={(s) => {
+              setDndEnabled(s.enabled);
+              try { localStorage.setItem("voxply.dndEnabled", s.enabled ? "1" : "0"); } catch {}
+            }}
+            onExportBackup={async (_passphrase, _label) => {
+              return "data:application/octet-stream;base64,";
+            }}
+            onImportBackup={async (_fileContent, _passphrase) => {
+              return "same" as const;
+            }}
           />
         ) : (
           <div className="main-layout">
@@ -3090,8 +3144,8 @@ function App() {
                   onOpenSettings={openSettings}
                   onDragEnd={handleDragEnd}
                   onToggleHideSilenced={() => setHideSilenced((v) => !v)}
-                  sharing={voice.sharing}
-                  onScreenShare={voice.handleScreenShare}
+                  dndEnabled={dndEnabled}
+                  onToggleDnd={toggleDnd}
                 />
                 <ContentArea
                   view={view}
@@ -3110,6 +3164,7 @@ function App() {
                   users={users}
                   publicKey={publicKey}
                   blockedUsers={blockedUsers}
+                  ignoredUsers={ignoredUsers}
                   knownDisplayNames={knownDisplayNames}
                   myDisplayName={myDisplayName}
                   isAdmin={isAdmin}
