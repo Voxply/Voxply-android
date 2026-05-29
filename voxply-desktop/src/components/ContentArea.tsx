@@ -40,6 +40,10 @@ import { PendingAttachments, MessageAttachments } from "./Attachments";
 import { MessageContent } from "./MessageContent";
 import { UserListGrouped } from "./UserListGrouped";
 import { BotCard } from "./BotCard";
+import { ForumPostList } from "./ForumPostList";
+import { ForumPostDetail } from "./ForumPostDetail";
+import { ForumComposer } from "./ForumComposer";
+import type { PostSummary } from "../types";
 
 interface SelectedAllianceChannel {
   alliance_id: string;
@@ -72,6 +76,7 @@ interface Props {
   users: User[];
   publicKey: string | null;
   blockedUsers: Set<string>;
+  ignoredUsers?: Set<string>;
   knownDisplayNames: Set<string>;
   myDisplayName: string | null;
   isAdmin: boolean;
@@ -142,7 +147,7 @@ export function ContentArea({
   selectedChannel, selectedConversation, selectedAllianceChannel,
   messages, searchResults, searchOpen, searchQuery,
   dmMessages, allianceMessages,
-  users, publicKey, blockedUsers, knownDisplayNames, myDisplayName,
+  users, publicKey, blockedUsers, ignoredUsers = new Set<string>(), knownDisplayNames, myDisplayName,
   isAdmin, myRoles, editingMessageId, editingDraft, replyTarget,
   pendingAttachments, stickToBottom, newWhileScrolledUp,
   hubConnected, reconnectingHubs, memberSidebarHidden, voiceActiveUsers, voiceChannelId, onVoiceJoin, onVoiceLeave,
@@ -171,6 +176,8 @@ export function ContentArea({
   const [botCard, setBotCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeGame, setActiveGame] = useState<InstalledGame | null>(null);
+  const [forumPost, setForumPost] = useState<PostSummary | null>(null);
+  const [showForumComposer, setShowForumComposer] = useState(false);
   const [focusedMessageIndex, setFocusedMessageIndex] = useState<number>(-1);
   const messageRowRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -421,6 +428,35 @@ export function ContentArea({
           ) : (
             <div className="no-channel"><p>Select a conversation</p></div>
           )
+        ) : selectedChannel && selectedChannel.channel_type === "forum" ? (
+          <div className="forum-content-area">
+            {showForumComposer && (
+              <ForumComposer
+                channelId={selectedChannel.id}
+                hubUrl={activeHub?.hub_url ?? ""}
+                onCreated={() => { setShowForumComposer(false); setForumPost(null); }}
+                onCancel={() => setShowForumComposer(false)}
+              />
+            )}
+            {forumPost ? (
+              <ForumPostDetail
+                postId={forumPost.id}
+                hubUrl={activeHub?.hub_url ?? ""}
+                publicKey={publicKey}
+                canManagePosts={myRoles.some((r) => r.permissions.some((p) => p === "admin" || p === "manage_posts"))}
+                onBack={() => setForumPost(null)}
+              />
+            ) : (
+              <ForumPostList
+                channelId={selectedChannel.id}
+                hubUrl={activeHub?.hub_url ?? ""}
+                publicKey={publicKey}
+                canCreatePost={myRoles.some((r) => r.permissions.some((p) => p === "admin" || p === "create_posts"))}
+                onOpenPost={(post) => setForumPost(post)}
+                onNewPost={() => setShowForumComposer(true)}
+              />
+            )}
+          </div>
         ) : selectedChannel ? (
           <>
             <div className="channel-header">
@@ -550,7 +586,7 @@ export function ContentArea({
                 </div>
               )}
               {(searchResults ?? messages)
-                .filter((m) => !blockedUsers.has(m.sender))
+                .filter((m) => !blockedUsers.has(m.sender) && !ignoredUsers.has(m.sender))
                 .map((m, i, arr) => {
                   const showSeparator = i === 0 || dayKey(m.created_at) !== dayKey(arr[i - 1].created_at);
                   const isMine = m.sender === publicKey;
@@ -563,7 +599,7 @@ export function ContentArea({
                   const isMentioned = m.sender !== publicKey && mentionsName(m.content, myDisplayName);
                   const isEphemeral = !!m.visible_to_pubkey && m.visible_to_pubkey === publicKey;
                   const actionText = meAction(m.content);
-                  const displayedMessages = (searchResults ?? messages).filter((msg) => !blockedUsers.has(msg.sender));
+                  const displayedMessages = (searchResults ?? messages).filter((msg) => !blockedUsers.has(msg.sender) && !ignoredUsers.has(msg.sender));
                   if (actionText !== null) {
                     return (
                       <React.Fragment key={m.id}>
@@ -917,6 +953,23 @@ export function ContentArea({
           publicKey={publicKey}
           displayName={myDisplayName}
           avatar={myAvatar}
+          hubUrl={activeHub?.hub_url ?? ""}
+          hubId={activeHubId ?? ""}
+          hubName={activeHub?.hub_name ?? ""}
+          channelId={selectedChannel?.id ?? null}
+          channelName={selectedChannel?.name ?? null}
+          farmUrl={null}
+          permissions={[]}
+          recentMessages={messages}
+          channelUsers={users.filter((u) => u.online).map((u) => ({ public_key: u.public_key, display_name: u.display_name, online: true }))}
+          onPostMessage={async (text) => {
+            if (!activeHub || !selectedChannel) return;
+            await fetch(`${activeHub.hub_url}/channels/${selectedChannel.id}/messages`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: text }),
+            });
+          }}
           onClose={() => setActiveGame(null)}
         />
       )}
