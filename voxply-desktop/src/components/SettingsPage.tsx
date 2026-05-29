@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
-import type { Hub, NamedProfile } from "../types";
+import type { Hub, NamedProfile, BlockEntry, IgnoreEntry, DndSettings } from "../types";
 import { formatPubkey } from "../utils/format";
 import { MicLevelMeter } from "./MicLevelMeter";
 import { PttKeyBinder } from "./PttKeyBinder";
@@ -10,6 +10,9 @@ import { ProfileTab } from "./ProfileTab";
 import { RestoreIdentitySection } from "./RestoreIdentitySection";
 import { PairingSection } from "./PairingSection";
 import { HomeHubSection } from "./HomeHubSection";
+import { IdentityBackupSection } from "./IdentityBackupSection";
+import { BlockIgnoreSection } from "./BlockIgnoreSection";
+import { DndSection } from "./DndSection";
 
 export type SettingsTab =
   | "profile"
@@ -17,6 +20,8 @@ export type SettingsTab =
   | "appearance"
   | "voice"
   | "security"
+  | "privacy"
+  | "notifications"
   | "devices"
   | "about";
 
@@ -64,6 +69,14 @@ export interface SettingsPageProps {
   onShowRecovery: () => void;
   onRecoverIdentity: (phrase: string) => Promise<void>;
   onClearLocalData: () => void;
+  blockedEntries: BlockEntry[];
+  ignoredEntries: IgnoreEntry[];
+  onUnblock: (pubkey: string) => void;
+  onUnignore: (pubkey: string) => void;
+  dnd: DndSettings;
+  onDndChange: (s: DndSettings) => void;
+  onExportBackup: (passphrase: string, label: string) => Promise<string>;
+  onImportBackup: (fileContent: string, passphrase: string) => Promise<"same" | "replaced" | "conflict">;
 }
 
 export function SettingsPage(props: SettingsPageProps) {
@@ -104,6 +117,8 @@ export function SettingsPage(props: SettingsPageProps) {
     { id: "appearance", label: "Appearance" },
     { id: "voice", label: "Voice & Video" },
     { id: "security", label: "Security" },
+    { id: "privacy", label: "Privacy" },
+    { id: "notifications", label: "Notifications" },
     { id: "devices", label: "Devices" },
     { id: "about", label: "About" },
   ];
@@ -396,6 +411,27 @@ export function SettingsPage(props: SettingsPageProps) {
               )}
             </div>
             <RestoreIdentitySection onRestore={props.onRecoverIdentity} />
+            <IdentityBackupSection
+              onExportBackup={props.onExportBackup}
+              onImportBackup={props.onImportBackup}
+            />
+          </section>
+        )}
+        {props.tab === "privacy" && (
+          <section>
+            <h1>Privacy</h1>
+            <BlockIgnoreSection
+              blockedUsers={props.blockedEntries}
+              ignoredUsers={props.ignoredEntries}
+              onUnblock={props.onUnblock}
+              onUnignore={props.onUnignore}
+            />
+          </section>
+        )}
+        {props.tab === "notifications" && (
+          <section>
+            <h1>Notifications</h1>
+            <DndSection dnd={props.dnd} onChange={props.onDndChange} />
           </section>
         )}
         {props.tab === "devices" && (
