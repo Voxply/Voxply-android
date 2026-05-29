@@ -21,6 +21,10 @@ import { BotAdminSection } from "./BotAdminSection";
 import { SurveyAdminSection } from "./SurveyAdminSection";
 import { LobbySettingsSection } from "./LobbySettingsSection";
 import { ChallengeSettingsSection } from "./ChallengeSettingsSection";
+import { ServerTagsSection } from "./ServerTagsSection";
+import { GamesAdminSection } from "./GamesAdminSection";
+import { CertificationsSection } from "./CertificationsSection";
+import { RecoveryContactsSection } from "./RecoveryContactsSection";
 
 export type HubAdminTab =
   | "overview"
@@ -35,7 +39,11 @@ export type HubAdminTab =
   | "bots"
   | "survey"
   | "lobby"
-  | "challenge";
+  | "challenge"
+  | "tags"
+  | "games"
+  | "certifications"
+  | "recovery";
 
 export interface HubAdminPageProps {
   tab: HubAdminTab;
@@ -159,6 +167,10 @@ export function HubAdminPage(props: HubAdminPageProps) {
     { id: "survey", label: "Onboarding" },
     { id: "lobby", label: "Lobby" },
     { id: "challenge", label: "Challenge" },
+    { id: "tags", label: "Tags & Badges" },
+    { id: "games", label: "Games" },
+    { id: "certifications", label: "Certifications" },
+    { id: "recovery", label: "Recovery" },
   ];
 
   return (
@@ -597,6 +609,29 @@ export function HubAdminPage(props: HubAdminPageProps) {
         )}
         {props.tab === "challenge" && (
           <ChallengeSettingsSection hubUrl={props.activeHubUrl} />
+        )}
+        {props.tab === "tags" && (
+          <ServerTagsSection hubUrl={props.activeHubUrl} isAdmin={true} />
+        )}
+        {props.tab === "games" && (
+          <GamesAdminSection
+            hubUrl={props.activeHubUrl}
+            channels={props.channels.filter((c) => !c.is_category).map((c) => ({ id: c.id, name: c.name }))}
+          />
+        )}
+        {props.tab === "certifications" && (
+          <CertificationsSection
+            hubUrl={props.activeHubUrl}
+            isAdmin={true}
+            publicKey={props.myPubkey}
+          />
+        )}
+        {props.tab === "recovery" && (
+          <RecoveryContactsSection
+            hubUrl={props.activeHubUrl}
+            publicKey={props.myPubkey}
+            isAdmin={true}
+          />
         )}
       </main>
     </div>
