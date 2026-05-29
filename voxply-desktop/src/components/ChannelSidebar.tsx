@@ -83,8 +83,8 @@ interface Props {
   onOpenSettings: () => void;
   onDragEnd: (event: DragEndEvent) => void;
   onToggleHideSilenced: () => void;
-  sharing: boolean;
-  onScreenShare: () => void;
+  dndEnabled: boolean;
+  onToggleDnd: () => void;
 }
 
 export function ChannelSidebar({
@@ -102,7 +102,7 @@ export function ChannelSidebar({
   onVoiceJoin, onVoiceLeave,
   onSelectAllianceChannel, onSelectConversation,
   onOpenFriends, onToggleSelfMute, onToggleSelfDeafen, onOpenSettings,
-  onDragEnd, onToggleHideSilenced, sharing, onScreenShare,
+  onDragEnd, onToggleHideSilenced, dndEnabled, onToggleDnd,
 }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -522,11 +522,12 @@ export function ChannelSidebar({
                   {selfDeafened ? "🚫🔊" : "🔊"}
                 </button>
                 <button
-                  onClick={onScreenShare}
-                  className={`btn-icon-gear ${sharing ? "active" : ""}`}
-                  title={sharing ? "Stop sharing" : "Share screen"}
+                  onClick={onToggleDnd}
+                  className={`btn-icon-gear ${dndEnabled ? "active" : ""}`}
+                  title={dndEnabled ? "DND on — tap to disable" : "Do not disturb"}
+                  aria-label={dndEnabled ? "Disable do not disturb" : "Enable do not disturb"}
                 >
-                  {sharing ? "⏹" : "🖥"}
+                  {dndEnabled ? "🔕" : "🔔"}
                 </button>
                 <button
                   onClick={onVoiceLeave}
