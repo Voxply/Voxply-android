@@ -17,8 +17,9 @@ import {
   clearToken,
   type SavedHub,
 } from "../storage";
-import { loadIdentity } from "../../identity/store";
+import { loadIdentity, loadPairedState, hexToBytes, bytesToHex } from "../../identity/store";
 import { signBytes, publicKeyHex } from "../../identity/crypto";
+import { ed25519 } from "@noble/curves/ed25519";
 import type { Hub } from "@shared/types";
 
 interface InfoResponse {
@@ -48,21 +49,34 @@ async function authenticate(
   security_level: number,
   invite_code?: string,
 ): Promise<string> {
+  const pairedState = await loadPairedState();
+
+  const authPubkey = pairedState ? pairedState.cert.subkey_pubkey : pubkeyHex;
+
   const challengeRes: ChallengeResponse = await rawFetch(
     `${auth_url}/auth/challenge`,
-    { method: "POST", body: JSON.stringify({ public_key: pubkeyHex }) },
+    { method: "POST", body: JSON.stringify({ public_key: authPubkey }) },
   ).then((r) => r.json() as Promise<ChallengeResponse>);
 
   const challengeBytes = hexToBytes(challengeRes.challenge);
-  const signatureHex = signBytes(challengeBytes, seedHex);
 
+  let signatureHex: string;
   const body: Record<string, unknown> = {
-    public_key: pubkeyHex,
+    public_key: authPubkey,
     challenge: challengeRes.challenge,
-    signature: signatureHex,
     security_nonce,
     security_level,
   };
+
+  if (pairedState) {
+    const sig = ed25519.sign(challengeBytes, hexToBytes(pairedState.subkey_private_hex));
+    signatureHex = bytesToHex(sig);
+    body.subkey_cert = pairedState.cert;
+  } else {
+    signatureHex = signBytes(challengeBytes, seedHex);
+  }
+
+  body.signature = signatureHex;
   if (invite_code) body["invite_code"] = invite_code;
 
   const verifyRes: VerifyResponse = await rawFetch(`${auth_url}/auth/verify`, {
@@ -71,14 +85,6 @@ async function authenticate(
   }).then((r) => r.json() as Promise<VerifyResponse>);
 
   return verifyRes.token;
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const out = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < out.length; i++) {
-    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return out;
 }
 
 export async function addHub(

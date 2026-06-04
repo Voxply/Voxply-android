@@ -8,13 +8,34 @@ export interface IdentityRecord {
   security_level: number;
 }
 
+export interface SubkeyCert {
+  master_pubkey: string;
+  subkey_pubkey: string;
+  device_label: string;
+  issued_at: number;
+  not_after: number | null;
+  fallback_hubs: string[];
+  signature: string;
+}
+
+export interface PairedState {
+  id: "main";
+  subkey_private_hex: string;
+  cert: SubkeyCert;
+}
+
 let _db: IDBPDatabase | null = null;
 
 async function getDb(): Promise<IDBPDatabase> {
   if (!_db) {
-    _db = await openDB("voxply", 1, {
-      upgrade(db) {
-        db.createObjectStore("identity", { keyPath: "id" });
+    _db = await openDB("voxply", 2, {
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          db.createObjectStore("identity", { keyPath: "id" });
+        }
+        if (oldVersion < 2) {
+          db.createObjectStore("paired", { keyPath: "id" });
+        }
       },
     });
   }
@@ -55,4 +76,20 @@ export function hexToBytes(hex: string): Uint8Array {
     out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   }
   return out;
+}
+
+export async function loadPairedState(): Promise<PairedState | null> {
+  const db = await getDb();
+  const result = await db.get("paired", "main");
+  return result ?? null;
+}
+
+export async function savePairedState(state: Omit<PairedState, "id">): Promise<void> {
+  const db = await getDb();
+  await db.put("paired", { ...state, id: "main" });
+}
+
+export async function clearPairedState(): Promise<void> {
+  const db = await getDb();
+  await db.delete("paired", "main");
 }

@@ -63,6 +63,7 @@ import {
 } from "@platform";
 import { sendComponentInteraction } from "@platform";
 import { loadIdentity, saveIdentity, generateIdentity } from "./platform-android/identity-store";
+import { PairingPanel } from "./platform-android/PairingPanel";
 import { publicKeyHex, signBytes, dhKeypairFromSeed } from "@identity/crypto";
 import { seedToPhrase, phraseToSeed, validatePhrase } from "@identity/recovery";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -244,6 +245,7 @@ export default function App() {
   const [voiceToast, setVoiceToast] = useState(false);
 
   const [updateAvailable, setUpdateAvailable] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   // === Identity init ===
 
@@ -790,7 +792,7 @@ export default function App() {
           onOpenFriends={() => {}}
           onToggleSelfMute={() => {}}
           onToggleSelfDeafen={() => {}}
-          onOpenSettings={() => {}}
+          onOpenSettings={() => setShowSettings(true)}
           onToggleHideSilenced={() => {}}
           onDragEnd={() => {}}
           sharing={false}
@@ -920,6 +922,35 @@ export default function App() {
           onAdd={handleAddHub}
           onClose={() => { setShowAddHub(false); setHubPreview({ state: "idle" }); setAddHubError(null); }}
         />
+      )}
+
+      {showSettings && (
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+            zIndex: 1000, display: "flex", alignItems: "flex-end",
+          }}
+          onClick={() => setShowSettings(false)}
+        >
+          <div
+            style={{
+              background: "var(--bg-primary)", borderRadius: "var(--r-md) var(--r-md) 0 0",
+              width: "100%", maxHeight: "80vh", overflowY: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 0" }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--text-muted)", padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+            <PairingPanel onClose={() => setShowSettings(false)} />
+          </div>
+        </div>
       )}
     </MobileShell>
   );
