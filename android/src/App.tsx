@@ -795,8 +795,8 @@ export default function App() {
           onOpenSettings={() => setShowSettings(true)}
           onToggleHideSilenced={() => {}}
           onDragEnd={() => {}}
-          sharing={false}
-          onScreenShare={() => {}}
+          dndEnabled={false}
+          onToggleDnd={() => {}}
         />
       }
       title={selectedChannel?.name ?? selectedConversation?.id ?? "Voxply"}
