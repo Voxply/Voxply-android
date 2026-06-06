@@ -395,6 +395,7 @@ export function ContentArea({
                 onClick={() => searchOpen ? onCloseSearch() : onSetSearchOpen(true)}
                 className="btn-icon-header"
                 title="Search messages"
+                aria-label="Search messages"
               >
                 🔍
               </button>
@@ -402,6 +403,7 @@ export function ContentArea({
                 onClick={() => onSetMemberSidebarHidden(!memberSidebarHidden)}
                 className="btn-icon-header"
                 title={memberSidebarHidden ? "Show member list" : "Hide member list"}
+                aria-label={memberSidebarHidden ? "Show member list" : "Hide member list"}
               >
                 {memberSidebarHidden ? "👥" : "👤"}
               </button>
@@ -584,7 +586,7 @@ export function ContentArea({
                             )}
                             <span className="message-actions">
                               <ReactionPicker onPick={(emoji) => onToggleReaction(m.id, emoji)} />
-                              <button className="message-action" onClick={() => onSetReplyTarget(m)} title="Reply">
+                              <button className="message-action" onClick={() => onSetReplyTarget(m)} title="Reply" aria-label="Reply">
                                 ↩
                               </button>
                               <button
@@ -601,11 +603,12 @@ export function ContentArea({
                                   }
                                 }}
                                 title="Copy link"
+                                aria-label="Copy link"
                               >
                                 🔗
                               </button>
                               {isMine && (
-                                <button className="message-action" onClick={() => onStartEdit(m)} title="Edit">
+                                <button className="message-action" onClick={() => onStartEdit(m)} title="Edit" aria-label="Edit">
                                   ✎
                                 </button>
                               )}
@@ -614,6 +617,7 @@ export function ContentArea({
                                   className="message-action danger"
                                   onClick={() => onDeleteMessage(m.id)}
                                   title="Delete"
+                                  aria-label="Delete"
                                 >
                                   ✕
                                 </button>
@@ -674,7 +678,7 @@ export function ContentArea({
                     formatPubkey(replyTarget.sender)}
                 </strong>
                 <span className="reply-snippet">{replyTarget.content.slice(0, 80)}</span>
-                <button className="reply-banner-close" onClick={() => onSetReplyTarget(null)} title="Cancel reply">
+                <button className="reply-banner-close" onClick={() => onSetReplyTarget(null)} title="Cancel reply" aria-label="Cancel reply">
                   ×
                 </button>
               </div>
