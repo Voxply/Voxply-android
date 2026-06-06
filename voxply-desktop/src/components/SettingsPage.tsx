@@ -273,9 +273,9 @@ export function SettingsPage(props: SettingsPageProps) {
               <ThemePicker value={props.theme} onChange={props.onThemeChange} />
             </div>
             <div className="settings-section">
-              <label className="settings-label">Language</label>
+              <label className="settings-label" htmlFor="settings-language">Language</label>
               <div className="settings-row">
-                <select value={i18n.language} onChange={e => {
+                <select id="settings-language" value={i18n.language} onChange={e => {
                   i18n.changeLanguage(e.target.value);
                   localStorage.setItem('voxply_language', e.target.value);
                 }}>
@@ -294,8 +294,9 @@ export function SettingsPage(props: SettingsPageProps) {
             <div className="settings-section">
               <div className="voice-devices-row">
                 <div>
-                  <label className="settings-label">Microphone</label>
+                  <label className="settings-label" htmlFor="settings-mic">Microphone</label>
                   <select
+                    id="settings-mic"
                     value={props.voiceInputDevice}
                     onChange={(e) => props.onInputDeviceChange(e.target.value)}
                   >
@@ -306,8 +307,9 @@ export function SettingsPage(props: SettingsPageProps) {
                   </select>
                 </div>
                 <div>
-                  <label className="settings-label">Speaker</label>
+                  <label className="settings-label" htmlFor="settings-speaker">Speaker</label>
                   <select
+                    id="settings-speaker"
                     value={props.voiceOutputDevice}
                     onChange={(e) => props.onOutputDeviceChange(e.target.value)}
                   >
