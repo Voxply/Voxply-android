@@ -119,70 +119,77 @@ const ScreenShareViewer = forwardRef<ScreenShareViewerRef, Props>(
       }
     }, [streams]);
 
-    const mainStream = streams.find((s) => s.kind === "screen") ?? streams[0] ?? null;
-    const webcamStream = streams.find((s) => s.kind === "webcam") ?? null;
+    const sharerMap = new Map<string, { screen: ActiveStream | null; webcam: ActiveStream | null }>();
+    for (const s of streams) {
+      const entry = sharerMap.get(s.sharer_pubkey) ?? { screen: null, webcam: null };
+      if (s.kind === "screen") entry.screen = s;
+      else if (s.kind === "webcam") entry.webcam = s;
+      sharerMap.set(s.sharer_pubkey, entry);
+    }
 
     return (
       <div className="screen-share-panel">
-        {mainStream && (
-          <video
-            key={mainStream.stream_id}
-            className="main-stream"
-            autoPlay
-            muted
-            playsInline
-            ref={(el) => {
-              videoRefs.current.set(mainStream.stream_id, el);
-              if (el) {
-                const s = streamStates.current.get(mainStream.stream_id);
-                if (s && el.src !== s.objectUrl) {
-                  el.src = s.objectUrl;
-                  el.play().catch(() => {});
-                }
-              }
-            }}
-          />
-        )}
-
-        {webcamStream && (
-          <video
-            key={webcamStream.stream_id}
-            className="webcam-overlay"
-            autoPlay
-            muted
-            playsInline
-            ref={(el) => {
-              videoRefs.current.set(webcamStream.stream_id, el);
-              if (el) {
-                const s = streamStates.current.get(webcamStream.stream_id);
-                if (s && el.src !== s.objectUrl) {
-                  el.src = s.objectUrl;
-                  el.play().catch(() => {});
-                }
-              }
-            }}
-          />
-        )}
-
-        {streams.filter((s) => s.has_audio).map((s) => (
-          <div key={s.stream_id} className="screen-share-volume">
-            <label>Volume</label>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={volumes[s.stream_id] ?? 1}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                setVolumes((prev) => ({ ...prev, [s.stream_id]: v }));
-                const el = videoRefs.current.get(s.stream_id);
-                if (el) {
-                  el.volume = v;
-                  el.muted = v === 0;
-                }
-              }}
-            />
+        {Array.from(sharerMap.entries()).map(([pubkey, { screen, webcam }]) => (
+          <div key={pubkey} className="screen-share-main-wrap">
+            {screen && (
+              <video
+                key={screen.stream_id}
+                className="main-stream"
+                autoPlay
+                muted
+                playsInline
+                ref={(el) => {
+                  videoRefs.current.set(screen!.stream_id, el);
+                  if (el) {
+                    const s = streamStates.current.get(screen!.stream_id);
+                    if (s && el.src !== s.objectUrl) {
+                      el.src = s.objectUrl;
+                      el.play().catch(() => {});
+                    }
+                  }
+                }}
+              />
+            )}
+            {webcam && (
+              <video
+                key={webcam.stream_id}
+                className="webcam-overlay"
+                autoPlay
+                muted
+                playsInline
+                ref={(el) => {
+                  videoRefs.current.set(webcam!.stream_id, el);
+                  if (el) {
+                    const s = streamStates.current.get(webcam!.stream_id);
+                    if (s && el.src !== s.objectUrl) {
+                      el.src = s.objectUrl;
+                      el.play().catch(() => {});
+                    }
+                  }
+                }}
+              />
+            )}
+            {streams.filter((s) => s.sharer_pubkey === pubkey && s.has_audio).map((s) => (
+              <div key={s.stream_id} className="screen-share-volume">
+                <label>Volume</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={volumes[s.stream_id] ?? 1}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setVolumes((prev) => ({ ...prev, [s.stream_id]: v }));
+                    const el = videoRefs.current.get(s.stream_id);
+                    if (el) {
+                      el.volume = v;
+                      el.muted = v === 0;
+                    }
+                  }}
+                />
+              </div>
+            ))}
           </div>
         ))}
       </div>

@@ -193,6 +193,8 @@ export default function App() {
   const [installedGames, setInstalledGames] = useState<InstalledGame[]>([]);
   const [userAlliances, setUserAlliances] = useState<AllianceInfo[]>([]);
   const [allianceChannels] = useState<Record<string, AllianceSharedChannel[]>>({});
+  const [assertiveAnnouncement, setAssertiveAnnouncement] = useState("");
+  const [voicePoliteAnnouncement, setVoicePoliteAnnouncement] = useState("");
 
   // === View ===
   const [view, setView] = useState<View>("channels");
@@ -290,6 +292,11 @@ export default function App() {
   const activeHubIdRef = useRef<string | null>(null);
   useEffect(() => { activeHubIdRef.current = activeHubId; }, [activeHubId]);
 
+  const hubsRef = useRef<Hub[]>([]);
+  useEffect(() => { hubsRef.current = hubs; }, [hubs]);
+
+  const prevVoiceRef = useRef<Record<string, VoiceParticipant[]>>({});
+
   const selectedChannelRef = useRef<Channel | null>(null);
   useEffect(() => { selectedChannelRef.current = selectedChannel; }, [selectedChannel]);
 
@@ -343,13 +350,30 @@ export default function App() {
     onVoiceState: (raw) => {
       const m = raw as { channel_id?: string; participants?: VoiceParticipant[] };
       if (m.channel_id && m.participants) {
-        setVoicePartByChannel((prev) => ({ ...prev, [m.channel_id!]: m.participants! }));
+        const prev = prevVoiceRef.current[m.channel_id] ?? [];
+        const next = m.participants;
+        for (const p of next) {
+          if (!prev.find((pp) => pp.public_key === p.public_key)) {
+            setVoicePoliteAnnouncement(`${p.display_name ?? p.public_key.slice(0, 8)} joined voice.`);
+          }
+        }
+        for (const p of prev) {
+          if (!next.find((np) => np.public_key === p.public_key)) {
+            setVoicePoliteAnnouncement(`${p.display_name ?? p.public_key.slice(0, 8)} left voice.`);
+          }
+        }
+        prevVoiceRef.current = { ...prevVoiceRef.current, [m.channel_id]: next };
+        setVoicePartByChannel((pv) => ({ ...pv, [m.channel_id!]: m.participants! }));
       }
     },
     onScreenShare: () => {},
     onStatusChange: (connected) => {
       const id = activeHubIdRef.current;
-      if (id) setHubConnected((prev) => ({ ...prev, [id]: connected }));
+      if (id) {
+        setHubConnected((prev) => ({ ...prev, [id]: connected }));
+        const name = hubsRef.current.find((h) => h.hub_id === id)?.hub_name ?? "hub";
+        setAssertiveAnnouncement(connected ? `Connected to ${name}.` : `Disconnected from ${name}, reconnecting…`);
+      }
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), []);
@@ -831,6 +855,8 @@ export default function App() {
           onClose={() => { setShowAddHub(false); setHubPreview({ state: "idle" }); setAddHubError(null); }}
         />
       )}
+      <div role="alert" aria-live="assertive" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>{assertiveAnnouncement}</div>
+      <div role="status" aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>{voicePoliteAnnouncement}</div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { FocusTrap } from "./FocusTrap";
 
 type HubPreview =
   | { state: "idle" }
@@ -19,8 +20,15 @@ interface Props {
 }
 
 export function AddHubModal({ hubUrl, onHubUrlChange, hubPreview, inviteCode, onInviteCodeChange, loading, error, onAdd, onClose }: Props) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
+      <FocusTrap>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>Add Hub</h3>
         <p className="muted" style={{ marginBottom: "var(--space-3)" }}>
@@ -83,6 +91,7 @@ export function AddHubModal({ hubUrl, onHubUrlChange, hubPreview, inviteCode, on
         </div>
         {error && <div className="error">{error}</div>}
       </div>
+      </FocusTrap>
     </div>
   );
 }

@@ -1969,6 +1969,7 @@ select:focus {
 .recovery-input:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 .recovery-input-footer {
@@ -2385,6 +2386,7 @@ select:focus {
 .user-list-filter input:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 .user-list-empty {
@@ -2807,6 +2809,10 @@ select:focus {
   outline: none;
 }
 
+.palette-input:focus {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
 .palette-list {
   list-style: none;
   margin: 0;
@@ -3081,6 +3087,7 @@ select:focus {
 .reaction-picker-search:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 .reaction-picker-grid {
