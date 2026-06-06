@@ -168,8 +168,9 @@ export function RecoveryContactsSection({ hubUrl, publicKey, isAdmin }: Props) {
         {settings && (
           <>
             <div className="settings-row" style={{ marginBottom: 8 }}>
-              <label>Threshold (contacts needed):</label>
+              <label htmlFor="recovery-threshold">Threshold (contacts needed):</label>
               <input
+                id="recovery-threshold"
                 type="number"
                 min={1}
                 max={settings.contacts.length || 1}

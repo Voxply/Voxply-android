@@ -445,8 +445,9 @@ export function PairingSection({ hubs }: { hubs: Hub[] }) {
                 disabled={claimStep === "claiming"}
               />
               <div className="settings-section">
-                <label className="settings-label">Device label</label>
+                <label className="settings-label" htmlFor="pairing-device-label">Device label</label>
                 <input
+                  id="pairing-device-label"
                   type="text"
                   placeholder="e.g. My Laptop"
                   value={deviceLabel}
