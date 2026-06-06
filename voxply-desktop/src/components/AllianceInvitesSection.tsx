@@ -46,7 +46,7 @@ export function AllianceInvitesSection({ ownHubUrl }: { ownHubUrl: string }) {
       {error && (
         <div className="error-banner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           {error}
-          <button className="btn-icon-small" onClick={() => setError(null)}>×</button>
+          <button className="btn-icon-small" onClick={() => setError(null)} aria-label="Dismiss" title="Dismiss">×</button>
         </div>
       )}
 

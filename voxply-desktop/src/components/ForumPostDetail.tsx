@@ -154,7 +154,7 @@ export function ForumPostDetail({ postId, hubUrl, publicKey, canManagePosts, onB
           {replyTo && (
             <div className="forum-reply-quote muted">
               Replying to a message
-              <button className="forum-clear-reply" onClick={() => setReplyTo(null)}>×</button>
+              <button className="forum-clear-reply" onClick={() => setReplyTo(null)} aria-label="Clear reply" title="Clear reply">×</button>
             </div>
           )}
           <textarea
