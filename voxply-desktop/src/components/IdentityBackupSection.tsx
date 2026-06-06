@@ -102,6 +102,7 @@ export function IdentityBackupSection({ onExportBackup, onImportBackup }: Props)
             value={exportPhrase}
             onChange={(e) => setExportPhrase(e.target.value)}
             placeholder="Passphrase"
+            aria-label="Export passphrase"
             autoComplete="new-password"
             style={{ marginBottom: 6 }}
           />
@@ -110,6 +111,7 @@ export function IdentityBackupSection({ onExportBackup, onImportBackup }: Props)
             value={exportConfirm}
             onChange={(e) => setExportConfirm(e.target.value)}
             placeholder="Confirm passphrase"
+            aria-label="Confirm export passphrase"
             autoComplete="new-password"
             style={{ marginBottom: 6 }}
           />
@@ -127,6 +129,7 @@ export function IdentityBackupSection({ onExportBackup, onImportBackup }: Props)
             value={exportLabel}
             onChange={(e) => setExportLabel(e.target.value)}
             placeholder="Label (optional, e.g. phone backup 2026)"
+            aria-label="Backup label"
             style={{ marginBottom: 8 }}
           />
           {exportError && <p className="error-text">{exportError}</p>}
@@ -164,6 +167,7 @@ export function IdentityBackupSection({ onExportBackup, onImportBackup }: Props)
             value={importPhrase}
             onChange={(e) => setImportPhrase(e.target.value)}
             placeholder="Passphrase"
+            aria-label="Import passphrase"
             autoComplete="current-password"
             style={{ marginBottom: 8 }}
           />
