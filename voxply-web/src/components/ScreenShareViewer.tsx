@@ -171,8 +171,9 @@ const ScreenShareViewer = forwardRef<ScreenShareViewerRef, Props>(
             )}
             {streams.filter((s) => s.sharer_pubkey === pubkey && s.has_audio).map((s) => (
               <div key={s.stream_id} className="screen-share-volume">
-                <label>Volume</label>
+                <label htmlFor={`volume-${s.stream_id}`}>Volume</label>
                 <input
+                  id={`volume-${s.stream_id}`}
                   type="range"
                   min={0}
                   max={1}
