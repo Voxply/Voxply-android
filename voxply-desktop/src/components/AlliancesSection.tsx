@@ -401,13 +401,14 @@ export function AlliancesSection({
                 {tab === "invite" && (
                   <div className="alliance-invite-tab">
                     <div className="alliance-invite-section">
-                      <label className="settings-label">Send invite directly</label>
+                      <label className="settings-label" htmlFor="alliance-push-url">Send invite directly</label>
                       <p className="muted">
                         Enter another hub's URL to send them an alliance invite.
                         Their admin will see it in Hub Settings → Alliance invites.
                       </p>
                       <div className="alliance-join-row">
                         <input
+                          id="alliance-push-url"
                           type="text"
                           value={pushTargetUrl}
                           onChange={(e) => setPushTargetUrl(e.target.value)}
@@ -468,12 +469,13 @@ export function AlliancesSection({
                     </div>
 
                     <div className="alliance-invite-section">
-                      <label className="settings-label">Join via share code</label>
+                      <label className="settings-label" htmlFor="alliance-join-code">Join via share code</label>
                       <p className="muted">
                         Paste the share code you received from another hub's admin.
                       </p>
                       <div className="alliance-join-row">
                         <input
+                          id="alliance-join-code"
                           type="text"
                           value={joinCode}
                           onChange={(e) => setJoinCode(e.target.value)}

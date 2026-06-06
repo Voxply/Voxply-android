@@ -40,8 +40,9 @@ export function ForumComposer({ channelId, hubUrl, onCreated, onCancel }: Props)
         {error && <p className="error-text">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="settings-section">
-            <label className="settings-label">Title</label>
+            <label className="settings-label" htmlFor="forum-title">Title</label>
             <input
+              id="forum-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -50,8 +51,9 @@ export function ForumComposer({ channelId, hubUrl, onCreated, onCancel }: Props)
             />
           </div>
           <div className="settings-section">
-            <label className="settings-label">Body</label>
+            <label className="settings-label" htmlFor="forum-body">Body</label>
             <textarea
+              id="forum-body"
               rows={6}
               value={body}
               onChange={(e) => setBody(e.target.value)}
