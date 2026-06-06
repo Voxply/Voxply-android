@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { FocusTrap } from "./FocusTrap";
 import { invoke } from "@tauri-apps/api/core";
 import type { BotAdminInfo, BotCreatedResult } from "../types";
 
@@ -39,6 +40,12 @@ export function BotWizard({ hubUrl, onCreated, onClose }: BotWizardProps) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   function handleDone() {
     if (!result) return;
     const info: BotAdminInfo = {
@@ -53,8 +60,9 @@ export function BotWizard({ hubUrl, onCreated, onClose }: BotWizardProps) {
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal">
-        <h3>{stage === "name" ? "Create Bot" : "Bot Created"}</h3>
+      <FocusTrap>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="bot-wizard-title">
+        <h3 id="bot-wizard-title">{stage === "name" ? "Create Bot" : "Bot Created"}</h3>
 
         {stage === "name" && (
           <>
@@ -95,6 +103,7 @@ export function BotWizard({ hubUrl, onCreated, onClose }: BotWizardProps) {
           </>
         )}
       </div>
+      </FocusTrap>
     </div>
   );
 }
