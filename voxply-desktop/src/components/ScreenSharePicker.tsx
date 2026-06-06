@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { ScreenShareOpts } from "../types";
+import { FocusTrap } from "./FocusTrap";
 
 interface Props {
   onStart: (opts: ScreenShareOpts) => void;
@@ -23,8 +24,15 @@ export function ScreenSharePicker({ onStart, onCancel }: Props) {
     }).catch(() => {});
   }, [includeWebcam]);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onCancel(); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
   return (
     <div className="screen-share-picker-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+      <FocusTrap>
       <div className="screen-share-picker">
         <h2>Share your screen</h2>
 
@@ -77,6 +85,7 @@ export function ScreenSharePicker({ onStart, onCancel }: Props) {
           </button>
         </div>
       </div>
+      </FocusTrap>
     </div>
   );
 }

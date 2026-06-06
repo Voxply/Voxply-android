@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { InstalledGame, Message } from "../types";
+import { FocusTrap } from "./FocusTrap";
 
 interface Props {
   game: InstalledGame;
@@ -132,8 +133,15 @@ export function GameModal({
     return () => window.removeEventListener("message", onMessage);
   }, [publicKey, displayName, avatar, hubId, hubName, channelId, channelName, farmUrl, permissions, recentMessages, channelUsers, onPostMessage, game.id]);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div className="game-modal-overlay">
+      <FocusTrap>
       <div className="game-modal">
         <div className="game-modal-titlebar">
           <span className="game-modal-title">{game.name}</span>
@@ -152,6 +160,7 @@ export function GameModal({
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         />
       </div>
+      </FocusTrap>
     </div>
   );
 }

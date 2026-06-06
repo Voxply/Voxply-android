@@ -1203,6 +1203,8 @@ function App() {
           (event) => {
             if (event.payload.hub_id !== activeHubIdRef.current) return;
             voice.onParticipantJoined(event.payload.channel_id, event.payload.participant);
+            const name = event.payload.participant.display_name ?? event.payload.participant.public_key.slice(0, 8);
+            setVoicePoliteAnnouncement(`${name} joined voice.`);
           }
         )
       );
@@ -1213,6 +1215,7 @@ function App() {
           (event) => {
             if (event.payload.hub_id !== activeHubIdRef.current) return;
             voice.onParticipantLeft(event.payload.channel_id, event.payload.public_key);
+            setVoicePoliteAnnouncement(`${event.payload.public_key.slice(0, 8)} left voice.`);
           }
         )
       );
