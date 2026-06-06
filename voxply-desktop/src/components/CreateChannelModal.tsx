@@ -50,6 +50,7 @@ export function CreateChannelModal({
             if (e.key === "Escape") onClose();
           }}
           placeholder={isCategory ? "category-name" : "channel-name"}
+          maxLength={64}
           autoFocus
         />
         {!isCategory && (
@@ -58,6 +59,7 @@ export function CreateChannelModal({
             onChange={(e) => onDescriptionChange(e.target.value)}
             placeholder="Channel description (optional) — shown in the channel header"
             rows={3}
+            maxLength={280}
           />
         )}
         <div className="modal-actions">
