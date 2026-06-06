@@ -167,7 +167,7 @@ export function ChannelSidebar({
   }
 
   return (
-    <div className="sidebar">
+    <nav className="sidebar" aria-label="Channels">
       {view === "channels" && (
         <div className="hub-header" ref={hubHeaderRef}>
           <button
@@ -503,11 +503,11 @@ export function ChannelSidebar({
               {myDisplayName || publicKey?.slice(0, 12) || "You"}
             </span>
           </div>
-          <button onClick={onOpenSettings} className="btn-icon-gear" title="Settings">
+          <button onClick={onOpenSettings} className="btn-icon-gear" title="Settings" aria-label="Settings">
             ⚙
           </button>
         </div>
       </div>
-    </div>
+    </nav>
   );
 }

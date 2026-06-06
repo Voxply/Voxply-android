@@ -443,7 +443,7 @@ export function ContentArea({
                 </button>
               </div>
             )}
-            <div className="messages" ref={messagesContainerRef} onScroll={onMessagesScroll}>
+            <div className="messages" role="list" aria-label="Messages" ref={messagesContainerRef} onScroll={onMessagesScroll}>
               {(searchResults ?? messages).length === 0 && (
                 <div className="channel-empty">
                   {searchResults !== null ? (
@@ -494,6 +494,7 @@ export function ContentArea({
                         )}
                         <div
                           id={`msg-${m.id}`}
+                          role="listitem"
                           className={`message message-action ${isMentioned ? "message-mentioned" : ""}`}
                         >
                           <span className="action-asterisk">*</span>
@@ -516,6 +517,7 @@ export function ContentArea({
                       )}
                       <div
                         id={`msg-${m.id}`}
+                        role="listitem"
                         className={`message ${isMentioned ? "message-mentioned" : ""} ${isEphemeral ? "message-ephemeral" : ""}`}
                       >
                         {m.reply_to && (
