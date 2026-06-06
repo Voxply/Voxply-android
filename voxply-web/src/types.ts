@@ -174,6 +174,7 @@ export interface Conversation {
 }
 
 export interface DmMessage {
+  id?: string;
   sender: string;
   sender_name: string | null;
   content: string;

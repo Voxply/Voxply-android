@@ -335,6 +335,7 @@ export default function App() {
       if (convId === selectedConvRef.current?.id) {
         getDmMessages(convId).then((msgs) => {
           const asDm: DmMessage[] = msgs.map((mm) => ({
+            id: mm.id,
             sender: mm.sender,
             sender_name: mm.sender_name,
             content: mm.content,
@@ -596,6 +597,7 @@ export default function App() {
       try {
         const msgs = await getDmMessages(conv.id);
         const asDmMessages: DmMessage[] = msgs.map((m) => ({
+          id: m.id,
           sender: m.sender,
           sender_name: m.sender_name,
           content: m.content,
