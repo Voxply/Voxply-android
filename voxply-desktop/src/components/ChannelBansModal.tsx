@@ -95,9 +95,10 @@ export function ChannelBansModal({
         </p>
 
         <div className="settings-section">
-          <label className="settings-label">Ban a user</label>
+          <label className="settings-label" htmlFor="ban-user-select">Ban a user</label>
           <div className="settings-row" style={{ alignItems: "stretch" }}>
             <select
+              id="ban-user-select"
               value={picking}
               onChange={(e) => setPicking(e.target.value)}
               style={{ flex: 1 }}
@@ -114,6 +115,7 @@ export function ChannelBansModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Reason (optional)"
+              aria-label="Ban reason"
               style={{ flex: 2 }}
             />
             <button onClick={handleBan} disabled={!picking}>

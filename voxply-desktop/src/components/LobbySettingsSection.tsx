@@ -56,11 +56,12 @@ export function LobbySettingsSection({ hubUrl }: { hubUrl: string }) {
       </div>
 
       <div className="settings-section">
-        <label className="settings-label">Welcome message</label>
+        <label className="settings-label" htmlFor="lobby-welcome-msg">Welcome message</label>
         <p className="muted">
           Shown to users while they wait. Supports plain text (max 1000 characters).
         </p>
         <textarea
+          id="lobby-welcome-msg"
           rows={6}
           maxLength={1000}
           value={welcomeMd}

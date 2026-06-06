@@ -94,9 +94,10 @@ export function HubBotsSection() {
       )}
 
       <div className="settings-section">
-        <label className="settings-label">Create bot</label>
+        <label className="settings-label" htmlFor="new-bot-name">Create bot</label>
         <div className="settings-row">
           <input
+            id="new-bot-name"
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
