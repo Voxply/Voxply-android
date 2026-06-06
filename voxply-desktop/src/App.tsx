@@ -199,6 +199,8 @@ function App() {
   // WS connection status per hub. Missing key means connected (default
   // optimistic so the very first render doesn't flash a banner).
   const [hubConnected, setHubConnected] = useState<Record<string, boolean>>({});
+  const [assertiveAnnouncement, setAssertiveAnnouncement] = useState("");
+  const [voicePoliteAnnouncement, setVoicePoliteAnnouncement] = useState("");
 
   const {
     reconnectingHubs,
@@ -1079,9 +1081,13 @@ function App() {
             });
             if (connected) {
               onHubReconnected(hub_id);
+              const name = hubs.find((h) => h.hub_id === hub_id)?.hub_name ?? "hub";
+              setAssertiveAnnouncement(`Reconnected to ${name}.`);
             } else {
               // Connection dropped — kick off the auto-reconnect loop.
               scheduleReconnect(hub_id);
+              const name = hubs.find((h) => h.hub_id === hub_id)?.hub_name ?? "hub";
+              setAssertiveAnnouncement(`Disconnected from ${name}, reconnecting…`);
             }
           }
         )
@@ -3422,6 +3428,12 @@ function App() {
             </div>
           </div>
         )}
+        <div role="alert" aria-live="assertive" aria-atomic="true" className="sr-only">
+          {assertiveAnnouncement}
+        </div>
+        <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+          {voicePoliteAnnouncement}
+        </div>
       </>
     </div>
   );
