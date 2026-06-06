@@ -201,8 +201,9 @@ export function HubAdminPage(props: HubAdminPageProps) {
           <section>
             <h1>Overview</h1>
             <div className="settings-section">
-              <label className="settings-label">Hub name</label>
+              <label className="settings-label" htmlFor="admin-hub-name">Hub name</label>
               <input
+                id="admin-hub-name"
                 type="text"
                 value={props.hubName}
                 onChange={(e) => props.onHubNameChange(e.target.value)}
@@ -210,9 +211,10 @@ export function HubAdminPage(props: HubAdminPageProps) {
               />
             </div>
             <div className="settings-section">
-              <label className="settings-label">Description</label>
+              <label className="settings-label" htmlFor="admin-hub-desc">Description</label>
               <p className="muted">Shown to visitors before they join.</p>
               <textarea
+                id="admin-hub-desc"
                 rows={3}
                 value={props.hubDescription}
                 onChange={(e) => props.onHubDescriptionChange(e.target.value)}
@@ -261,13 +263,14 @@ export function HubAdminPage(props: HubAdminPageProps) {
               </p>
             </div>
             <div className="settings-section">
-              <label className="settings-label">Anti-spam: minimum proof-of-work</label>
+              <label className="settings-label" htmlFor="admin-antispam">Anti-spam: minimum proof-of-work</label>
               <p className="muted">
                 Connecting clients must prove CPU work tied to their public key.
                 Higher levels take longer to compute and slow down bot floods.
                 messages per minute (0 = disabled)
               </p>
               <input
+                id="admin-antispam"
                 type="number"
                 min={0}
                 max={9999}
@@ -277,12 +280,13 @@ export function HubAdminPage(props: HubAdminPageProps) {
               />
             </div>
             <div className="settings-section">
-              <label className="settings-label">Max channel nesting depth</label>
+              <label className="settings-label" htmlFor="admin-max-depth">Max channel nesting depth</label>
               <p className="muted">
                 Limits how deep categories and channels can nest. 0 = unlimited.
                 If set to 4, categories can nest up to depth 3 and channels up to depth 4.
               </p>
               <input
+                id="admin-max-depth"
                 type="number"
                 min={0}
                 max={20}
@@ -327,8 +331,9 @@ export function HubAdminPage(props: HubAdminPageProps) {
                 find it. Your hub signs the submission — no account needed.
               </p>
               <div className="settings-section">
-                <label className="settings-label">Tags</label>
+                <label className="settings-label" htmlFor="admin-dir-tags">Tags</label>
                 <input
+                  id="admin-dir-tags"
                   type="text"
                   placeholder="gaming, music, en (comma-separated)"
                   value={dirTags}
@@ -336,8 +341,9 @@ export function HubAdminPage(props: HubAdminPageProps) {
                 />
               </div>
               <div className="settings-section">
-                <label className="settings-label">Language</label>
+                <label className="settings-label" htmlFor="admin-dir-lang">Language</label>
                 <input
+                  id="admin-dir-lang"
                   type="text"
                   placeholder="en"
                   value={dirLanguage}
@@ -345,8 +351,9 @@ export function HubAdminPage(props: HubAdminPageProps) {
                 />
               </div>
               <div className="settings-section">
-                <label className="settings-label">Bio</label>
+                <label className="settings-label" htmlFor="admin-dir-bio">Bio</label>
                 <textarea
+                  id="admin-dir-bio"
                   rows={3}
                   placeholder="Tell people what your hub is about…"
                   value={dirBio}
@@ -354,8 +361,9 @@ export function HubAdminPage(props: HubAdminPageProps) {
                 />
               </div>
               <div className="settings-section">
-                <label className="settings-label">Invite code (optional)</label>
+                <label className="settings-label" htmlFor="admin-dir-invite">Invite code (optional)</label>
                 <input
+                  id="admin-dir-invite"
                   type="text"
                   placeholder="For invite-only hubs"
                   value={dirInviteCode}
@@ -363,8 +371,9 @@ export function HubAdminPage(props: HubAdminPageProps) {
                 />
               </div>
               <div className="settings-section">
-                <label className="settings-label">Directory URL</label>
+                <label className="settings-label" htmlFor="admin-dir-url">Directory URL</label>
                 <input
+                  id="admin-dir-url"
                   type="text"
                   value={dirUrl}
                   onChange={(e) => setDirUrl(e.target.value)}
