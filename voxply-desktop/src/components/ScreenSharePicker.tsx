@@ -33,8 +33,8 @@ export function ScreenSharePicker({ onStart, onCancel }: Props) {
   return (
     <div className="screen-share-picker-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
       <FocusTrap>
-      <div className="screen-share-picker">
-        <h2>Share your screen</h2>
+      <div className="screen-share-picker" role="dialog" aria-modal="true" aria-labelledby="screen-share-title">
+        <h2 id="screen-share-title">Share your screen</h2>
 
         <label className="settings-row">
           <input
@@ -62,6 +62,7 @@ export function ScreenSharePicker({ onStart, onCancel }: Props) {
 
         {includeWebcam && videoDevices.length > 0 && (
           <select
+            aria-label="Camera"
             value={webcamDeviceId}
             onChange={(e) => setWebcamDeviceId(e.target.value)}
           >
