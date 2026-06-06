@@ -65,11 +65,11 @@ jobs:
 
       - name: Install npm dependencies (voxply-desktop)
         working-directory: voxply-desktop
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Install npm dependencies (voxply-web)
         working-directory: voxply-web
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: TypeScript check
         working-directory: android
