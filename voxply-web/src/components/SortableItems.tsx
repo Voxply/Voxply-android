@@ -37,6 +37,7 @@ export function SortableChannelItem({
   muted,
   participants,
   isCurrentVoiceChannel,
+  hubUrl,
   style,
   onClick,
   onDoubleClick,
@@ -49,6 +50,7 @@ export function SortableChannelItem({
   muted: boolean;
   participants: VoiceParticipant[];
   isCurrentVoiceChannel: boolean;
+  hubUrl?: string;
   style?: React.CSSProperties;
   onClick: () => void;
   onDoubleClick: () => void;
@@ -57,6 +59,13 @@ export function SortableChannelItem({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: channel.id });
+
+  const isBanner = channel.channel_type === "banner";
+  const bannerSrc = channel.banner_url
+    ? channel.banner_url
+    : channel.banner_file_id && hubUrl
+    ? `${hubUrl}/uploads/${channel.banner_file_id}`
+    : undefined;
 
   return (
     <li
@@ -67,59 +76,68 @@ export function SortableChannelItem({
         transition,
         ...style,
       }}
+      {...attributes}
+      {...listeners}
     >
-      {/* Drag listeners + click/dblclick live on the inner row, not the
-          outer li, so the nested participants list isn't a drag handle and
-          dblclick on a participant doesn't trigger a voice join. */}
-      <div
-        className={`channel-item ${selected ? "selected" : ""} ${
-          unread ? "unread" : ""
-        } ${muted ? "muted" : ""} ${
-          isCurrentVoiceChannel ? "in-voice-here" : ""
-        }`}
-        onClick={onClick}
-        onDoubleClick={onDoubleClick}
-        onContextMenu={onContextMenu}
-        title="Double-click to join voice"
-        {...attributes}
-        {...listeners}
-      >
-        {unread && <span className="channel-unread-dot" />}
-        <ChannelIcon icon={channel.icon} customIconSvg={channel.custom_icon_svg} />
-        {" "}{channel.name}
-        {muted && <span className="channel-muted-icon" title="Muted">🔕</span>}
-        {participants.length > 0 && (
-          <span
-            className="channel-voice-badge"
-            title={`${participants.length} in voice`}
+      {isBanner ? (
+        bannerSrc && (
+          <img
+            src={bannerSrc}
+            alt=""
+            style={{ width: "100%", height: "auto", display: "block", borderRadius: 4 }}
+          />
+        )
+      ) : (
+        <>
+          <div
+            className={`channel-item ${selected ? "selected" : ""} ${
+              unread ? "unread" : ""
+            } ${muted ? "muted" : ""} ${
+              isCurrentVoiceChannel ? "in-voice-here" : ""
+            }`}
+            onClick={onClick}
+            onDoubleClick={onDoubleClick}
+            onContextMenu={onContextMenu}
+            title="Double-click to join voice"
           >
-            🎙️ {participants.length}
-          </span>
-        )}
-        {onSettings && (
-          <button
-            className="channel-settings-btn"
-            onClick={(e) => { e.stopPropagation(); onSettings(e); }}
-            title="Channel settings"
-            aria-label="Channel settings"
-          >
-            ⚙
-          </button>
-        )}
-      </div>
-      {participants.length > 0 && (
-        <ul className="channel-participants">
-          {participants.map((p) => (
-            <li
-              key={p.public_key}
-              className="channel-participant"
-              title={p.public_key}
-            >
-              <span className="channel-participant-icon">🎙️</span>
-              {p.display_name || p.public_key.slice(0, 12)}
-            </li>
-          ))}
-        </ul>
+            {unread && <span className="channel-unread-dot" />}
+            <ChannelIcon icon={channel.icon} customIconSvg={channel.custom_icon_svg} />
+            {" "}{channel.name}
+            {muted && <span className="channel-muted-icon" title="Muted">🔕</span>}
+            {participants.length > 0 && (
+              <span
+                className="channel-voice-badge"
+                title={`${participants.length} in voice`}
+              >
+                🎙️ {participants.length}
+              </span>
+            )}
+            {onSettings && (
+              <button
+                className="channel-settings-btn"
+                onClick={(e) => { e.stopPropagation(); onSettings(e); }}
+                title="Channel settings"
+                aria-label="Channel settings"
+              >
+                ⚙
+              </button>
+            )}
+          </div>
+          {participants.length > 0 && (
+            <ul className="channel-participants">
+              {participants.map((p) => (
+                <li
+                  key={p.public_key}
+                  className="channel-participant"
+                  title={p.public_key}
+                >
+                  <span className="channel-participant-icon">🎙️</span>
+                  {p.display_name || p.public_key.slice(0, 12)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </li>
   );

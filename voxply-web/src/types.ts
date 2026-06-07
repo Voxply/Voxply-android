@@ -16,6 +16,9 @@ export interface Channel {
   color: string | null;
   custom_icon_svg: string | null;
   created_at: number;
+  channel_type?: "text" | "forum" | "banner";
+  banner_url?: string | null;
+  banner_file_id?: string | null;
 }
 
 export interface HubIcon {
