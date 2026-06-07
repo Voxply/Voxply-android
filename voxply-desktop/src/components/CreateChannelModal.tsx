@@ -22,9 +22,9 @@ export function CreateChannelModal({
       <FocusTrap>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="create-channel-title" onClick={(e) => e.stopPropagation()}>
         <h3 id="create-channel-title">
-          Create {isCategory ? "Category" : "Channel"}
-          {parentId ? " (inside category)" : ""}
+          Create…{parentId ? " (inside category)" : ""}
         </h3>
+        <p className="modal-section-label">Space type</p>
         <div className="channel-type-row">
           <button
             type="button"
