@@ -1852,6 +1852,7 @@ async fn voice_join(
                 input_device: saved.input_device,
                 output_device: saved.output_device,
                 vad_threshold: saved.vad_threshold,
+                ..voxply_voice::VoiceSettings::default()
             };
             let mut pipeline = match voxply_voice::AudioPipeline::start_p2p_with_settings(
                 0, hub_addr, vsettings,
@@ -2008,6 +2009,7 @@ fn mic_test_start(state: State<'_, AppState>, app: AppHandle) -> Result<(), Stri
                 input_device: saved.input_device,
                 output_device: saved.output_device,
                 vad_threshold: saved.vad_threshold,
+                ..voxply_voice::VoiceSettings::default()
             };
             let mut pipeline =
                 match voxply_voice::AudioPipeline::start_loopback_with_settings(vsettings).await {
@@ -4778,9 +4780,181 @@ pub fn run() {
             survey_admin_get,
             survey_admin_put,
             survey_admin_responses,
+            list_recovery_contacts,
+            set_recovery_contacts,
+            remove_recovery_contact,
+            list_admin_recovery_requests,
+            approve_recovery_request,
+            deny_recovery_request,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+// ---------------------------------------------------------------------------
+// Recovery contacts + key rotation commands
+// ---------------------------------------------------------------------------
+
+#[derive(Serialize, Deserialize, Clone)]
+struct RecoveryContactEntry {
+    pubkey: String,
+    added_at: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct RecoveryContactsResponse {
+    owner_pubkey: String,
+    contacts: Vec<RecoveryContactEntry>,
+    threshold: u32,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct SetContactsPayload {
+    contacts: Vec<String>,
+    threshold: u32,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct RecoveryContactOut {
+    pubkey: String,
+    added_at: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct AdminRotationRequest {
+    id: String,
+    old_pubkey: String,
+    new_pubkey: String,
+    reason: Option<String>,
+    status: String,
+    created_at: i64,
+    attestation_count: i64,
+}
+
+#[tauri::command]
+async fn list_recovery_contacts(
+    hub_url: String,
+    state: State<'_, AppState>,
+) -> Result<RecoveryContactsResponse, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .get(format!("{base}/recovery/contacts"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid: {e}"))
+}
+
+#[tauri::command]
+async fn set_recovery_contacts(
+    hub_url: String,
+    threshold: u32,
+    contacts: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .put(format!("{base}/recovery/contacts"))
+        .bearer_auth(&token)
+        .json(&SetContactsPayload { contacts, threshold })
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn remove_recovery_contact(
+    hub_url: String,
+    pubkey: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .delete(format!("{base}/recovery/contacts/{pubkey}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn list_admin_recovery_requests(
+    hub_url: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<AdminRotationRequest>, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .get(format!("{base}/admin/recovery/pending"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid: {e}"))
+}
+
+#[tauri::command]
+async fn approve_recovery_request(
+    hub_url: String,
+    request_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .post(format!("{base}/admin/recovery/{request_id}/approve"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn deny_recovery_request(
+    hub_url: String,
+    request_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .post(format!("{base}/admin/recovery/{request_id}/deny"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

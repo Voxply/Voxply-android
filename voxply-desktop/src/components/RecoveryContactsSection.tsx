@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { RecoverySettings, RotationRequest } from "../types";
-import { formatRelative } from "../utils/format";
 
 interface Props {
   hubUrl: string;
@@ -8,285 +8,162 @@ interface Props {
   isAdmin: boolean;
 }
 
-export function RecoveryContactsSection({ hubUrl, publicKey, isAdmin }: Props) {
-  const [settings, setSettings] = useState<RecoverySettings | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [newContact, setNewContact] = useState("");
+export function RecoveryContactsSection({ hubUrl, isAdmin }: Props) {
   const [threshold, setThreshold] = useState(2);
+  const [contactsText, setContactsText] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | string>("idle");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [requestId, setRequestId] = useState("");
-  const [requestStatus, setRequestStatus] = useState<RotationRequest | null>(null);
-  const [oldPubkey, setOldPubkey] = useState("");
-  const [reason, setReason] = useState("");
-  const [openingRequest, setOpeningRequest] = useState(false);
-  const [requestError, setRequestError] = useState("");
-
-  const [attestRequestId, setAttestRequestId] = useState("");
-  const [attesting, setAttesting] = useState(false);
-  const [attestError, setAttestError] = useState("");
-  const [attestResult, setAttestResult] = useState("");
-
-  const [adminRequests, setAdminRequests] = useState<RotationRequest[]>([]);
-  const [decidingId, setDecidingId] = useState<string | null>(null);
+  const [requests, setRequests] = useState<RotationRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
 
   useEffect(() => {
-    fetchSettings();
-    if (isAdmin) fetchAdminRequests();
+    void loadContacts();
+    if (isAdmin) void loadRequests();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hubUrl, publicKey]);
+  }, [hubUrl, isAdmin]);
 
-  async function fetchSettings() {
-    if (!publicKey) return;
-    setLoading(true);
+  async function loadContacts() {
     try {
-      const res = await fetch(`${hubUrl}/recovery/contacts`);
-      if (res.status === 404) { setSettings({ threshold: 2, contacts: [] }); return; }
-      if (!res.ok) return;
-      const data: RecoverySettings = await res.json();
-      setSettings(data);
-      setThreshold(data.threshold);
-    } catch { /* ignore */ } finally {
-      setLoading(false);
-    }
+      const s = await invoke<RecoverySettings>("list_recovery_contacts", { hubUrl });
+      setThreshold(s.threshold || 2);
+      setContactsText(s.contacts.map((c) => c.pubkey).join("\n"));
+    } catch { /* first load — ignore */ }
   }
 
-  async function fetchAdminRequests() {
+  async function loadRequests() {
+    setLoadingRequests(true);
     try {
-      const res = await fetch(`${hubUrl}/admin/recovery/requests`);
-      if (!res.ok) return;
-      const data: { requests: RotationRequest[] } = await res.json();
-      setAdminRequests(data.requests ?? []);
-    } catch { /* ignore */ }
-  }
-
-  async function save() {
-    if (!settings) return;
-    setSaving(true);
-    setError("");
-    try {
-      const res = await fetch(`${hubUrl}/recovery/contacts`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ threshold, contacts: settings.contacts.map((c) => c.contact_pubkey) }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const reqs = await invoke<RotationRequest[]>("list_admin_recovery_requests", { hubUrl });
+      setRequests(reqs);
     } catch (e) {
-      setError(String(e));
+      setLoadError(String(e));
     } finally {
-      setSaving(false);
+      setLoadingRequests(false);
     }
   }
 
-  function addContact() {
-    if (!newContact.trim() || !settings) return;
-    setSettings({ ...settings, contacts: [...settings.contacts, { contact_pubkey: newContact.trim(), created_at: Date.now() / 1000 }] });
-    setNewContact("");
-  }
-
-  function removeContact(pubkey: string) {
-    if (!settings) return;
-    setSettings({ ...settings, contacts: settings.contacts.filter((c) => c.contact_pubkey !== pubkey) });
-  }
-
-  async function openRequest(e: React.FormEvent) {
-    e.preventDefault();
-    if (!oldPubkey.trim() || !publicKey) return;
-    setOpeningRequest(true);
-    setRequestError("");
+  async function handleSave() {
+    const keys = contactsText.split(/[\n,]/).map((k) => k.trim()).filter(Boolean);
+    setSaveStatus("saving");
     try {
-      const res = await fetch(`${hubUrl}/recovery/rotation-request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ old_pubkey: oldPubkey.trim(), new_pubkey: publicKey, reason: reason.trim() || null }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: { id: string } = await res.json();
-      setRequestId(data.id);
+      await invoke("set_recovery_contacts", { hubUrl, threshold, contacts: keys });
+      await loadContacts();
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (e) {
-      setRequestError(String(e));
-    } finally {
-      setOpeningRequest(false);
+      setSaveStatus(String(e));
     }
   }
 
-  async function checkRequestStatus() {
-    if (!requestId) return;
+  async function handleRemove(pubkey: string) {
     try {
-      const res = await fetch(`${hubUrl}/recovery/rotation-request/${requestId}`);
-      if (!res.ok) return;
-      const data: RotationRequest = await res.json();
-      setRequestStatus(data);
-    } catch { /* ignore */ }
-  }
-
-  async function attest(e: React.FormEvent) {
-    e.preventDefault();
-    if (!attestRequestId.trim()) return;
-    setAttesting(true);
-    setAttestError("");
-    try {
-      const res = await fetch(`${hubUrl}/recovery/rotation-request/${attestRequestId.trim()}/attest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setAttestResult("Attestation submitted.");
+      await invoke("remove_recovery_contact", { hubUrl, pubkey });
+      setContactsText((prev) =>
+        prev
+          .split(/[\n,]/)
+          .map((k) => k.trim())
+          .filter((k) => k !== pubkey)
+          .join("\n"),
+      );
     } catch (e) {
-      setAttestError(String(e));
-    } finally {
-      setAttesting(false);
+      setSaveStatus(String(e));
     }
   }
 
-  async function decide(requestId: string, decision: "approve" | "reject") {
-    setDecidingId(requestId);
+  async function handleDecide(requestId: string, decision: "approve" | "deny") {
     try {
-      await fetch(`${hubUrl}/admin/recovery/requests/${requestId}/decide`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision }),
-      });
-      await fetchAdminRequests();
-    } catch { /* ignore */ } finally {
-      setDecidingId(null);
+      if (decision === "approve") {
+        await invoke("approve_recovery_request", { hubUrl, requestId });
+      } else {
+        await invoke("deny_recovery_request", { hubUrl, requestId });
+      }
+      await loadRequests();
+    } catch (e) {
+      setLoadError(String(e));
     }
   }
 
   return (
-    <div className="recovery-contacts-section">
+    <div>
       <div className="settings-section">
-        <label className="settings-label">Recovery contacts</label>
+        <label className="settings-label">Recovery contacts for this hub</label>
         <p className="muted">
-          If you lose your key, these people can vouch to this hub's admins that a new key is you.
+          If you lose your key, these contacts can vouch to this hub's admins that a new key is you.
           They cannot take over your account — an admin still decides.
-          Set this up <strong>before</strong> you lose your key.
+          Set this up before you need it.
         </p>
-        {loading && <p className="muted">Loading…</p>}
-        {settings && (
-          <>
-            <div className="settings-row" style={{ marginBottom: 8 }}>
-              <label htmlFor="recovery-threshold">Threshold (contacts needed):</label>
-              <input
-                id="recovery-threshold"
-                type="number"
-                min={1}
-                max={settings.contacts.length || 1}
-                value={threshold}
-                onChange={(e) => setThreshold(Number(e.target.value))}
-                style={{ width: 60 }}
-              />
-            </div>
-            {settings.contacts.map((c) => (
-              <div key={c.contact_pubkey} className="settings-row">
-                <span className="muted">{c.contact_pubkey.slice(0, 20)}…</span>
-                <button className="btn-danger btn-small" onClick={() => removeContact(c.contact_pubkey)}>Remove</button>
+        <label className="settings-label" htmlFor="recovery-contacts">Contact pubkeys (one per line or comma-separated)</label>
+        <textarea
+          id="recovery-contacts"
+          rows={4}
+          value={contactsText}
+          onChange={(e) => setContactsText(e.target.value)}
+          placeholder="Enter master pubkeys of trusted contacts…"
+          style={{ width: "100%", fontFamily: "monospace" }}
+        />
+        {contactsText.trim() && (
+          <div style={{ marginTop: 4 }}>
+            {contactsText.split(/[\n,]/).map((k) => k.trim()).filter(Boolean).map((pk) => (
+              <div key={pk} className="settings-row" style={{ marginBottom: 2 }}>
+                <code style={{ flex: 1, fontSize: "var(--text-xs)" }}>{pk.slice(0, 20)}…</code>
+                <button className="btn-secondary" onClick={() => handleRemove(pk)}>Remove</button>
               </div>
             ))}
-            <div style={{ marginTop: 8 }}>
-              <input
-                type="text"
-                value={newContact}
-                onChange={(e) => setNewContact(e.target.value)}
-                placeholder="Contact's pubkey"
-              />
-              <button className="btn-secondary" onClick={addContact} style={{ marginTop: 6 }}>Add contact</button>
-            </div>
-            {error && <p className="error-text">{error}</p>}
-            <button className="btn-primary" onClick={save} disabled={saving} style={{ marginTop: 10 }}>
-              {saving ? "Saving…" : "Save contacts"}
-            </button>
-          </>
+          </div>
         )}
-      </div>
-
-      <div className="settings-section">
-        <label className="settings-label">Recover my standing (lost key)</label>
-        <p className="muted">Use this if you have lost your old key and need to transfer standing to your current key.</p>
-        <form onSubmit={openRequest}>
+        <div className="settings-row" style={{ marginTop: 8 }}>
+          <label className="settings-label" htmlFor="recovery-threshold">Threshold (K-of-N needed)</label>
           <input
-            type="text"
-            value={oldPubkey}
-            onChange={(e) => setOldPubkey(e.target.value)}
-            placeholder="Old (lost) public key"
-            style={{ marginBottom: 6 }}
+            id="recovery-threshold"
+            type="number"
+            min={1}
+            max={20}
+            value={threshold}
+            onChange={(e) => setThreshold(Number(e.target.value))}
+            style={{ width: 60 }}
           />
-          <input
-            type="text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Reason (optional)"
-            style={{ marginBottom: 8 }}
-          />
-          {requestError && <p className="error-text">{requestError}</p>}
-          {requestId && (
-            <div>
-              <p className="muted">Request opened. Share this ID with your contacts out-of-band:</p>
-              <code className="pubkey-display">{requestId}</code>
-              <button type="button" className="btn-secondary" onClick={checkRequestStatus} style={{ marginTop: 6 }}>
-                Check status
-              </button>
-              {requestStatus && (
-                <p className="muted">Status: {requestStatus.status} ({requestStatus.attestation_count} attestation{requestStatus.attestation_count !== 1 ? "s" : ""})</p>
-              )}
-            </div>
-          )}
-          {!requestId && (
-            <button type="submit" className="btn-secondary" disabled={openingRequest || !oldPubkey.trim()}>
-              {openingRequest ? "Opening…" : "Open recovery request"}
-            </button>
-          )}
-        </form>
-      </div>
-
-      <div className="settings-section">
-        <label className="settings-label">Vouch for a contact's recovery</label>
-        <p className="muted">If someone sent you a recovery request ID, review and attest here.</p>
-        <form onSubmit={attest}>
-          <input
-            type="text"
-            value={attestRequestId}
-            onChange={(e) => setAttestRequestId(e.target.value)}
-            placeholder="Recovery request ID"
-          />
-          {attestError && <p className="error-text">{attestError}</p>}
-          {attestResult && <p className="muted">{attestResult}</p>}
-          <button type="submit" className="btn-secondary" disabled={attesting || !attestRequestId.trim()} style={{ marginTop: 6 }}>
-            {attesting ? "Submitting…" : "Attest"}
+        </div>
+        {saveStatus === "saved" && <p className="muted">Saved.</p>}
+        {saveStatus !== "idle" && saveStatus !== "saving" && saveStatus !== "saved" && (
+          <p className="error-text">{saveStatus}</p>
+        )}
+        <div className="settings-row">
+          <button onClick={handleSave} disabled={saveStatus === "saving"}>
+            {saveStatus === "saving" ? "Saving…" : "Save contacts"}
           </button>
-        </form>
+        </div>
       </div>
 
-      {isAdmin && adminRequests.length > 0 && (
+      {isAdmin && (
         <div className="settings-section">
-          <label className="settings-label">Recovery requests (admin review)</label>
-          {adminRequests.map((r) => (
-            <div key={r.id} className="settings-row recovery-request-row">
-              <div>
-                <div>Old key: <code>{r.old_pubkey.slice(0, 16)}…</code></div>
-                <div>New key: <code>{r.new_pubkey.slice(0, 16)}…</code></div>
-                <div className="muted">{r.attestation_count} attestation(s) — {formatRelative(r.created_at)}</div>
-                {r.reason && <div className="muted">Reason: {r.reason}</div>}
+          <label className="settings-label">Recovery requests queue</label>
+          <p className="muted">
+            Requests that have gathered enough contact attestations and await your decision.
+          </p>
+          {loadingRequests && <p className="muted">Loading…</p>}
+          {loadError && <p className="error-text">{loadError}</p>}
+          {requests.length === 0 && !loadingRequests && <p className="muted">No pending requests.</p>}
+          {requests.map((req) => (
+            <div key={req.id} className="settings-section" style={{ borderLeft: "2px solid var(--border)", paddingLeft: 12 }}>
+              <div className="settings-row">
+                <div>
+                  <div><strong>Old key:</strong> <code>{req.old_pubkey.slice(0, 16)}…</code></div>
+                  <div><strong>New key:</strong> <code>{req.new_pubkey.slice(0, 16)}…</code></div>
+                  {req.reason && <div className="muted">{req.reason}</div>}
+                  <div className="muted">
+                    Attestations: {req.attestation_count} · Status: {req.status}
+                  </div>
+                </div>
               </div>
-              <div>
-                <button
-                  className="btn-primary btn-small"
-                  onClick={() => decide(r.id, "approve")}
-                  disabled={decidingId === r.id}
-                >
-                  Approve
-                </button>
-                <button
-                  className="btn-danger btn-small"
-                  onClick={() => decide(r.id, "reject")}
-                  disabled={decidingId === r.id}
-                  style={{ marginLeft: 6 }}
-                >
-                  Reject
-                </button>
-              </div>
+              {(req.status === "ready_for_review" || req.status === "pending") && (
+                <div className="settings-row" style={{ marginTop: 8 }}>
+                  <button onClick={() => handleDecide(req.id, "approve")}>Approve transfer</button>
+                  <button className="btn-secondary danger" onClick={() => handleDecide(req.id, "deny")} style={{ marginLeft: 6 }}>
+                    Deny
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

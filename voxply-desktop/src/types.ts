@@ -617,11 +617,12 @@ export interface Certification {
 // ---- Identity recovery ----
 
 export interface RecoveryContact {
-  contact_pubkey: string;
-  created_at: number;
+  pubkey: string;
+  added_at: number;
 }
 
 export interface RecoverySettings {
+  owner_pubkey: string;
   threshold: number;
   contacts: RecoveryContact[];
 }
@@ -630,10 +631,9 @@ export interface RotationRequest {
   id: string;
   old_pubkey: string;
   new_pubkey: string;
-  status: "gathering" | "ready_for_review" | "approved" | "rejected" | "expired";
+  status: string;
   reason: string | null;
   created_at: number;
-  decided_at: number | null;
   attestation_count: number;
 }
 

@@ -30,7 +30,7 @@ x25519-dalek = { version = "2", features = ["static_secrets"] }
 aes-gcm = "0.10"
 hkdf = "0.12"
 sha2 = "0.10"
-voxply-voice = { path = "../../voice" }
+voxply-voice = { path = "../../../desktop/voice" }
 tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
 futures-util = "0.3"
 dirs = "6"
