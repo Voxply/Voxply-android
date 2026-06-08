@@ -102,7 +102,7 @@ export function GamesAdminSection({ hubUrl, channels }: Props) {
       await fetch(`${hubUrl}/admin/games/${gameId}/permissions`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ permissions: perms }),
+        body: JSON.stringify({ capabilities: perms }),
       });
       setEditingPerms(null);
       await fetchGames();
@@ -200,7 +200,7 @@ export function GamesAdminSection({ hubUrl, channels }: Props) {
                 className="btn-secondary btn-small"
                 onClick={() => {
                   setEditingPerms(editingPerms === g.id ? null : g.id);
-                  setPermsState((s) => ({ ...s, [g.id]: [...g.permissions] }));
+                  setPermsState((s) => ({ ...s, [g.id]: [...g.capabilities] }));
                 }}
               >
                 Permissions

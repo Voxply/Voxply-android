@@ -570,7 +570,7 @@ export interface AdminGame {
   thumbnail_url: string | null;
   installed_by: string;
   installed_at: number;
-  permissions: string[];
+  capabilities: string[];
   channel_scope: string[];
 }
 
