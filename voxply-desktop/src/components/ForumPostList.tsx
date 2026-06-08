@@ -91,7 +91,12 @@ function PostRow({ post, onOpen }: { post: PostSummary; onOpen: (p: PostSummary)
       </div>
       <div className="forum-post-row-meta muted">
         <span>{formatRelative(post.last_activity_at)}</span>
-        <span>{post.reply_count} {post.reply_count === 1 ? "reply" : "replies"}</span>
+        <span>
+          {post.reply_count} {post.reply_count === 1 ? "reply" : "replies"}
+          {post.unread_reply_count != null && post.unread_reply_count > 0 && (
+            <span className="unread-badge"> {post.unread_reply_count} new</span>
+          )}
+        </span>
       </div>
     </li>
   );

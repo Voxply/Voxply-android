@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { PostDetail, ReplyView } from "../types";
 import { formatRelative } from "../utils/format";
 
 interface Props {
   postId: string;
+  channelId: string;
   hubUrl: string;
   publicKey: string | null;
   canManagePosts: boolean;
   onBack: () => void;
 }
 
-export function ForumPostDetail({ postId, hubUrl, publicKey, canManagePosts, onBack }: Props) {
+export function ForumPostDetail({ postId, channelId, hubUrl, publicKey, canManagePosts, onBack }: Props) {
   const [post, setPost] = useState<PostDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -21,7 +23,7 @@ export function ForumPostDetail({ postId, hubUrl, publicKey, canManagePosts, onB
   useEffect(() => {
     loadPost();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postId, hubUrl]);
+  }, [postId, hubUrl, channelId]);
 
   async function loadPost() {
     setLoading(true);
@@ -31,6 +33,8 @@ export function ForumPostDetail({ postId, hubUrl, publicKey, canManagePosts, onB
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: PostDetail = await res.json();
       setPost(data);
+      // Fire-and-forget: mark this post as read.
+      void invoke("mark_post_read", { channelId, postId }).catch(() => undefined);
     } catch (e) {
       setError(String(e));
     } finally {

@@ -4563,6 +4563,29 @@ async fn survey_admin_responses(
     resp.json().await.map_err(|e| format!("Invalid response: {e}"))
 }
 
+#[tauri::command]
+async fn mark_post_read(
+    channel_id: String,
+    post_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let (hub_url, token) = active_session(&state)?;
+    let resp = state
+        .http_client
+        .post(format!(
+            "{hub_url}/channels/{channel_id}/posts/{post_id}/read"
+        ))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({}))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri::menu::{Menu, MenuItem};
@@ -4826,6 +4849,7 @@ pub fn run() {
             update_dm_blocks,
             load_appearance,
             save_appearance,
+            mark_post_read,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

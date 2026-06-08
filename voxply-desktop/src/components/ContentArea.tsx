@@ -441,6 +441,7 @@ export function ContentArea({
             {forumPost ? (
               <ForumPostDetail
                 postId={forumPost.id}
+                channelId={selectedChannel.id}
                 hubUrl={activeHub?.hub_url ?? ""}
                 publicKey={publicKey}
                 canManagePosts={myRoles.some((r) => r.permissions.some((p) => p === "admin" || p === "manage_posts"))}
