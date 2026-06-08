@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { Hub } from "@shared/types";
 import { PairingSection } from "./PairingSection";
+import { IdentityBackupSection } from "./IdentityBackupSection";
 
 export type SettingsTab = "profile" | "account" | "appearance" | "devices";
 
@@ -16,6 +17,7 @@ interface Props {
   onShowRecovery: () => void;
   theme: "calm" | "classic" | "linear" | "light";
   onThemeChange: (t: "calm" | "classic" | "linear" | "light") => void;
+  onIdentityImported?: () => void;
 }
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -33,6 +35,7 @@ const THEMES: { value: "calm" | "classic" | "linear" | "light"; label: string }[
 ];
 
 export function SettingsPage(props: Props) {
+  const { onIdentityImported } = props;
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
@@ -108,6 +111,7 @@ export function SettingsPage(props: Props) {
                 <button className="btn-secondary" onClick={props.onShowRecovery}>Show recovery phrase</button>
               )}
             </div>
+            <IdentityBackupSection publicKey={props.publicKey} onImported={onIdentityImported} />
           </section>
         )}
 
