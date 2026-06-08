@@ -401,6 +401,43 @@ fn voice_settings_path() -> Result<std::path::PathBuf, String> {
     Ok(home.join(".voxply").join("voice.json"))
 }
 
+fn appearance_settings_path() -> Result<std::path::PathBuf, String> {
+    let home = dirs::home_dir().ok_or("No home directory")?;
+    Ok(home.join(".voxply").join("appearance.json"))
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct AppearanceSettings {
+    #[serde(default = "default_appearance_slot")]
+    slot: String,
+    #[serde(default)]
+    skin: Option<serde_json::Value>,
+}
+
+fn default_appearance_slot() -> String {
+    "calm".to_string()
+}
+
+#[tauri::command]
+fn load_appearance() -> AppearanceSettings {
+    appearance_settings_path()
+        .ok()
+        .and_then(|p| std::fs::read_to_string(&p).ok())
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or(AppearanceSettings { slot: "calm".to_string(), skin: None })
+}
+
+#[tauri::command]
+fn save_appearance(settings: AppearanceSettings) -> Result<(), String> {
+    let path = appearance_settings_path()?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("Dir error: {e}"))?;
+    }
+    let json = serde_json::to_string_pretty(&settings).map_err(|e| format!("Serialize: {e}"))?;
+    std::fs::write(&path, json).map_err(|e| format!("Write error: {e}"))?;
+    Ok(())
+}
+
 fn unread_state_path() -> Result<std::path::PathBuf, String> {
     let home = dirs::home_dir().ok_or("No home directory")?;
     Ok(home.join(".voxply").join("unread.json"))
@@ -4787,6 +4824,8 @@ pub fn run() {
             approve_recovery_request,
             deny_recovery_request,
             update_dm_blocks,
+            load_appearance,
+            save_appearance,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -6,6 +6,8 @@ import { formatPubkey } from "../utils/format";
 import { MicLevelMeter } from "./MicLevelMeter";
 import { PttKeyBinder } from "./PttKeyBinder";
 import { ThemePicker } from "./ThemePicker";
+import { SkinEditor, makeSeed } from "./SkinEditor";
+import type { ThemeId, VoxplySkin } from "../skinValidation";
 import { ProfileTab } from "./ProfileTab";
 import { RestoreIdentitySection } from "./RestoreIdentitySection";
 import { PairingSection } from "./PairingSection";
@@ -42,8 +44,10 @@ export interface SettingsPageProps {
   onSetDefaultProfile: (id: string) => void;
   onApplyProfileToHub: (id: string) => void;
 
-  theme: "calm" | "classic" | "linear" | "light";
-  onThemeChange: (t: "calm" | "classic" | "linear" | "light") => void;
+  theme: ThemeId;
+  onThemeChange: (t: ThemeId) => void;
+  skin: VoxplySkin | null;
+  onSkinChange: (skin: VoxplySkin) => void;
   hasActiveHub: boolean;
   publicKey: string | null;
   copiedKey: boolean;
@@ -270,7 +274,10 @@ export function SettingsPage(props: SettingsPageProps) {
                 How Voxply looks. Pick whichever feels right — you can change
                 it any time.
               </p>
-              <ThemePicker value={props.theme} onChange={props.onThemeChange} />
+              <ThemePicker value={props.theme} skin={props.skin} onChange={props.onThemeChange} />
+              {props.theme === "custom" && (
+                <SkinEditor skin={props.skin ?? makeSeed("calm")} onChange={props.onSkinChange} />
+              )}
             </div>
             <div className="settings-section">
               <label className="settings-label" htmlFor="settings-language">Language</label>

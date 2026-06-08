@@ -39,6 +39,8 @@ import type {
   BotAdminInfo,
   BotDetailInfo,
 } from "./types";
+import type { ThemeId, VoxplySkin } from "./skinValidation";
+import { applySkinTokens, clearSkinTokens } from "./skinValidation";
 import { ScreenSharePicker } from "./components/ScreenSharePicker";
 import { useVoice } from "./hooks/useVoice";
 import { MAX_ATTACHMENT_BYTES, DEMO_HUB_URL } from "./constants";
@@ -771,7 +773,8 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showDiscover, setShowDiscover] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
-  const [theme, setTheme] = useState<"calm" | "classic" | "linear" | "light">("calm");
+  const [theme, setTheme] = useState<ThemeId>("calm");
+  const [skin, setSkin] = useState<VoxplySkin | null>(null);
   const [profiles, setProfiles] = useState<NamedProfile[]>([]);
   const [defaultProfileId, setDefaultProfileId] = useState<string | null>(null);
   const [recoveryPhrase, setRecoveryPhrase] = useState<string | null>(null);
@@ -1900,15 +1903,31 @@ function App() {
   useEffect(() => {
     (async () => {
       // Apply persisted theme as early as possible to avoid a flash of the
-      // default palette.
+      // default palette. Appearance settings take priority over profile theme.
       try {
-        const profile = await invoke<{ theme?: string | null }>("get_profile");
-        const t = (profile.theme ?? "calm") as "calm" | "classic" | "linear" | "light";
-        const valid = t === "calm" || t === "classic" || t === "linear" || t === "light" ? t : "calm";
-        setTheme(valid);
-        document.documentElement.dataset.theme = valid;
+        const appearance = await invoke<{ slot: string; skin?: VoxplySkin | null }>("load_appearance");
+        if (appearance.slot === "custom" && appearance.skin) {
+          setSkin(appearance.skin);
+          setTheme("custom");
+          document.documentElement.dataset.theme = appearance.skin.base;
+          applySkinTokens(appearance.skin);
+        } else {
+          const valid = (["calm", "classic", "linear", "light"] as const).includes(appearance.slot as "calm")
+            ? (appearance.slot as ThemeId)
+            : "calm";
+          setTheme(valid);
+          document.documentElement.dataset.theme = valid;
+        }
       } catch {
-        document.documentElement.dataset.theme = "calm";
+        try {
+          const profile = await invoke<{ theme?: string | null }>("get_profile");
+          const t = (profile.theme ?? "calm") as ThemeId;
+          const valid: ThemeId = (["calm", "classic", "linear", "light"] as const).includes(t as "calm") ? t : "calm";
+          setTheme(valid);
+          document.documentElement.dataset.theme = valid;
+        } catch {
+          document.documentElement.dataset.theme = "calm";
+        }
       }
       try {
         const key = await invoke<string>("get_my_public_key");
@@ -2330,7 +2349,7 @@ function App() {
   async function persistProfileFile(overrides: {
     profiles?: NamedProfile[];
     defaultProfileId?: string | null;
-    theme?: "calm" | "classic" | "linear" | "light";
+    theme?: ThemeId;
   } = {}) {
     const next = {
       profiles: overrides.profiles ?? profiles,
@@ -2409,10 +2428,23 @@ function App() {
     }
   }
 
-  async function handleSetTheme(t: "calm" | "classic" | "linear" | "light") {
+  async function handleSetTheme(t: ThemeId) {
+    if (t !== "custom") {
+      clearSkinTokens();
+      setSkin(null);
+      document.documentElement.dataset.theme = t;
+      await invoke("save_appearance", { settings: { slot: t, skin: null } }).catch(() => {});
+    }
     setTheme(t);
-    document.documentElement.dataset.theme = t;
     await persistProfileFile({ theme: t });
+  }
+
+  async function handleSkinChange(s: VoxplySkin) {
+    setSkin(s);
+    setTheme("custom");
+    document.documentElement.dataset.theme = s.base;
+    applySkinTokens(s);
+    await invoke("save_appearance", { settings: { slot: "custom", skin: s } }).catch(() => {});
   }
 
   async function handleShowRecovery() {
@@ -2670,7 +2702,7 @@ function App() {
       setProfiles(profile.profiles ?? []);
       setDefaultProfileId(profile.default_profile_id ?? null);
       const t = profile.theme;
-      if (t === "calm" || t === "classic" || t === "linear") {
+      if (t === "calm" || t === "classic" || t === "linear" || t === "light") {
         setTheme(t);
       }
     } catch {}
@@ -2949,6 +2981,8 @@ function App() {
             onApplyProfileToHub={handleApplyProfileToHub}
             theme={theme}
             onThemeChange={handleSetTheme}
+            skin={skin}
+            onSkinChange={handleSkinChange}
             hasActiveHub={hasActiveHub}
             publicKey={publicKey}
             copiedKey={copiedKey}
