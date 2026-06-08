@@ -28,6 +28,17 @@ jobs:
           parent="$(dirname "$GITHUB_WORKSPACE")"
           mkdir -p "$parent/desktop"
           cp -r "$GITHUB_WORKSPACE/_voxply_desktop/voice" "$parent/desktop/voice"
+          cat > "$parent/desktop/Cargo.toml" <<'WORKSPACE_EOF'
+          [workspace]
+          resolver = "2"
+          members = ["voice"]
+
+          [workspace.dependencies]
+          tokio = { version = "1", features = ["full"] }
+          tracing = "0.1"
+          tracing-subscriber = "0.3"
+          anyhow = "1"
+          WORKSPACE_EOF
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
