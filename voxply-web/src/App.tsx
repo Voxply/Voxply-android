@@ -973,6 +973,7 @@ export default function App() {
           onThemeChange={handleSetTheme}
           skin={skin}
           onSkinChange={handleSkinChange}
+          onImportSkin={(s) => { handleSkinChange(s); handleSetTheme("custom"); }}
           isAdmin={isAdmin}
           blocks={Array.from(blockedUsers).map((p) => ({ pubkey: p, since: 0 }))}
           ignores={Array.from(ignoredUsers).map((p) => ({ pubkey: p, since: 0 }))}

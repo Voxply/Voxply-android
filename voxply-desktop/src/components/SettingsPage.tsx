@@ -7,6 +7,7 @@ import { MicLevelMeter } from "./MicLevelMeter";
 import { PttKeyBinder } from "./PttKeyBinder";
 import { ThemePicker } from "./ThemePicker";
 import { SkinEditor, makeSeed } from "./SkinEditor";
+import { SkinsGallery } from "./SkinsGallery";
 import type { ThemeId, VoxplySkin } from "../skinValidation";
 import { ProfileTab } from "./ProfileTab";
 import { RestoreIdentitySection } from "./RestoreIdentitySection";
@@ -81,6 +82,7 @@ export interface SettingsPageProps {
   onDndChange: (s: DndSettings) => void;
   onExportBackup: (passphrase: string, label: string) => Promise<string>;
   onImportBackup: (fileContent: string, passphrase: string) => Promise<"same" | "replaced" | "conflict">;
+  onImportSkin: (skin: VoxplySkin) => void;
 }
 
 export function SettingsPage(props: SettingsPageProps) {
@@ -279,6 +281,7 @@ export function SettingsPage(props: SettingsPageProps) {
                 <SkinEditor skin={props.skin ?? makeSeed("calm")} onChange={props.onSkinChange} />
               )}
             </div>
+            <SkinsGallery onImport={props.onImportSkin} />
             <div className="settings-section">
               <label className="settings-label" htmlFor="settings-language">Language</label>
               <div className="settings-row">

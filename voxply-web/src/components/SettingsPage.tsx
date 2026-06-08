@@ -5,6 +5,7 @@ import { IdentityBackupSection } from "./IdentityBackupSection";
 import { RecoveryContactsSection } from "./RecoveryContactsSection";
 import { BlockIgnoreSection, type BlockEntry, type IgnoreEntry } from "./BlockIgnoreSection";
 import { SkinEditor, makeSeed } from "./SkinEditor";
+import { SkinsGallery } from "./SkinsGallery";
 import type { ThemeId, VoxplySkin } from "../skinValidation";
 
 export type SettingsTab = "profile" | "account" | "appearance" | "devices";
@@ -30,6 +31,7 @@ interface Props {
   onUnblock?: (pubkey: string) => void;
   onUnignore?: (pubkey: string) => void;
   knownNames?: Record<string, string | null>;
+  onImportSkin: (skin: VoxplySkin) => void;
 }
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -164,6 +166,7 @@ export function SettingsPage(props: Props) {
                 />
               )}
             </div>
+            <SkinsGallery onImport={props.onImportSkin} />
           </section>
         )}
 
