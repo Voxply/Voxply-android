@@ -900,6 +900,7 @@ export default function App() {
           onShowRecovery={handleShowRecovery}
           theme={theme}
           onThemeChange={setTheme}
+          isAdmin={isAdmin}
         />
       )}
 

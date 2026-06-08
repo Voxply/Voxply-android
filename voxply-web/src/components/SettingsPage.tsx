@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { Hub } from "@shared/types";
 import { PairingSection } from "./PairingSection";
 import { IdentityBackupSection } from "./IdentityBackupSection";
+import { RecoveryContactsSection } from "./RecoveryContactsSection";
 
 export type SettingsTab = "profile" | "account" | "appearance" | "devices";
 
@@ -18,6 +19,7 @@ interface Props {
   theme: "calm" | "classic" | "linear" | "light";
   onThemeChange: (t: "calm" | "classic" | "linear" | "light") => void;
   onIdentityImported?: () => void;
+  isAdmin?: boolean;
 }
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -35,7 +37,7 @@ const THEMES: { value: "calm" | "classic" | "linear" | "light"; label: string }[
 ];
 
 export function SettingsPage(props: Props) {
-  const { onIdentityImported } = props;
+  const { onIdentityImported, isAdmin = false } = props;
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
@@ -112,6 +114,10 @@ export function SettingsPage(props: Props) {
               )}
             </div>
             <IdentityBackupSection publicKey={props.publicKey} onImported={onIdentityImported} />
+            <div className="settings-section">
+              <label className="settings-label">Recovery contacts</label>
+              <RecoveryContactsSection isAdmin={isAdmin} />
+            </div>
           </section>
         )}
 

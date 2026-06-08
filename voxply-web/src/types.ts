@@ -521,3 +521,26 @@ export interface WebhookCreatedResult {
   id: string;
   webhook_url: string;
 }
+
+// ---- Identity Recovery ----
+
+export interface RecoveryContactEntry {
+  pubkey: string;
+  added_at: number;
+}
+
+export interface RecoveryContactsResponse {
+  owner_pubkey: string;
+  contacts: RecoveryContactEntry[];
+  threshold: number;
+}
+
+export interface RecoveryPendingRequest {
+  id: string;
+  old_pubkey: string;
+  new_pubkey: string;
+  reason: string | null;
+  status: string;
+  created_at: number;
+  attestation_count: number;
+}
