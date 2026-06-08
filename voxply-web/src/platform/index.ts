@@ -50,3 +50,22 @@ export {
 } from "./commands/dms";
 
 export { sendComponentInteraction } from "./commands/bots";
+
+export {
+  getPairedIdentity,
+  startPairingOffer,
+  pollPairingStatus,
+  completePairing,
+  fingerprintPubkey,
+  parsePairingOffer,
+  claimPairingOffer,
+  savePairedIdentity,
+} from "./commands/pairing";
+export type {
+  PairingOffer,
+  PairingStatus,
+  PairedIdentityInfo,
+  StartPairingResult,
+  ClaimResult,
+  SyncResult,
+} from "./commands/pairing";

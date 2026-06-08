@@ -70,6 +70,8 @@ import {
 } from "@identity/index";
 import { saveDraft, loadDraft, clearDraft } from "./utils/drafts";
 import { SearchBar } from "./components/SearchBar";
+import { SettingsPage } from "./components/SettingsPage";
+import type { SettingsTab } from "./components/SettingsPage";
 
 // ---- Types ----
 
@@ -251,6 +253,8 @@ export default function App() {
   const [voiceToast, setVoiceToast] = useState(false);
 
   const [showSearchBar, setShowSearchBar] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
 
   // === Identity init ===
 
@@ -805,7 +809,7 @@ export default function App() {
         onOpenFriends={() => {}}
         onToggleSelfMute={() => {}}
         onToggleSelfDeafen={() => {}}
-        onOpenSettings={() => {}}
+        onOpenSettings={() => setShowSettings(true)}
         onDragEnd={() => {}}
         sharing={false}
         onScreenShare={() => {}}
@@ -882,6 +886,22 @@ export default function App() {
         activeScreenShares={[]}
         screenShareViewerRef={screenShareViewerRef}
       />
+
+      {showSettings && (
+        <SettingsPage
+          tab={settingsTab}
+          onTab={setSettingsTab}
+          onClose={() => setShowSettings(false)}
+          hubs={hubs}
+          publicKey={publicKey}
+          copiedKey={copiedKey}
+          onCopyKey={handleCopyKey}
+          recoveryPhrase={recoveryPhrase}
+          onShowRecovery={handleShowRecovery}
+          theme={theme}
+          onThemeChange={setTheme}
+        />
+      )}
 
       {showAddHub && (
         <AddHubModal
