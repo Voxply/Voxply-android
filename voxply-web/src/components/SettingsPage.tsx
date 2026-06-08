@@ -4,6 +4,8 @@ import { PairingSection } from "./PairingSection";
 import { IdentityBackupSection } from "./IdentityBackupSection";
 import { RecoveryContactsSection } from "./RecoveryContactsSection";
 import { BlockIgnoreSection, type BlockEntry, type IgnoreEntry } from "./BlockIgnoreSection";
+import { SkinEditor, makeSeed } from "./SkinEditor";
+import type { ThemeId, VoxplySkin } from "../skinValidation";
 
 export type SettingsTab = "profile" | "account" | "appearance" | "devices";
 
@@ -17,8 +19,10 @@ interface Props {
   onCopyKey: () => void;
   recoveryPhrase: string | null;
   onShowRecovery: () => void;
-  theme: "calm" | "classic" | "linear" | "light";
-  onThemeChange: (t: "calm" | "classic" | "linear" | "light") => void;
+  theme: ThemeId;
+  onThemeChange: (t: ThemeId) => void;
+  skin: VoxplySkin | null;
+  onSkinChange: (skin: VoxplySkin) => void;
   onIdentityImported?: () => void;
   isAdmin?: boolean;
   blocks?: BlockEntry[];
@@ -35,11 +39,12 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: "devices", label: "Devices" },
 ];
 
-const THEMES: { value: "calm" | "classic" | "linear" | "light"; label: string }[] = [
+const THEMES: { value: ThemeId; label: string }[] = [
   { value: "calm", label: "Calm" },
   { value: "classic", label: "Classic" },
   { value: "linear", label: "Linear" },
   { value: "light", label: "Light" },
+  { value: "custom", label: "Custom" },
 ];
 
 export function SettingsPage(props: Props) {
@@ -152,6 +157,12 @@ export function SettingsPage(props: Props) {
                   </button>
                 ))}
               </div>
+              {props.theme === "custom" && (
+                <SkinEditor
+                  skin={props.skin ?? makeSeed("calm")}
+                  onChange={props.onSkinChange}
+                />
+              )}
             </div>
           </section>
         )}

@@ -73,10 +73,11 @@ import { saveDraft, loadDraft, clearDraft } from "./utils/drafts";
 import { SearchBar } from "./components/SearchBar";
 import { SettingsPage } from "./components/SettingsPage";
 import type { SettingsTab } from "./components/SettingsPage";
+import type { ThemeId, VoxplySkin } from "./skinValidation";
+import { applySkinTokens, clearSkinTokens } from "./skinValidation";
 
 // ---- Types ----
 
-type Theme = "calm" | "classic" | "linear" | "light";
 type View = "channels" | "dms" | "game";
 type HubPreview =
   | { state: "idle" }
@@ -173,7 +174,8 @@ export default function App() {
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [recoveryPhrase, setRecoveryPhrase] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
-  const [theme, setTheme] = useState<Theme>("calm");
+  const [theme, setTheme] = useState<ThemeId>("calm");
+  const [skin, setSkin] = useState<VoxplySkin | null>(null);
 
   // === Hubs ===
   const [hubs, setHubs] = useState<Hub[]>([]);
@@ -310,8 +312,45 @@ export default function App() {
 
   // Theme
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
+    if (theme === "custom" && skin) {
+      document.documentElement.dataset.theme = skin.base;
+      applySkinTokens(skin);
+    } else {
+      clearSkinTokens();
+      document.documentElement.dataset.theme = theme;
+    }
+  }, [theme, skin]);
+
+  // Load persisted appearance on startup
+  useEffect(() => {
+    const raw = localStorage.getItem("voxply:appearance");
+    if (raw) {
+      try {
+        const appearance = JSON.parse(raw) as { slot: string; skin?: VoxplySkin | null };
+        if (appearance.slot === "custom" && appearance.skin) {
+          setSkin(appearance.skin);
+          setTheme("custom");
+        } else if (["calm", "classic", "linear", "light"].includes(appearance.slot)) {
+          setTheme(appearance.slot as ThemeId);
+        }
+      } catch {}
+    }
+  }, []);
+
+  function handleSetTheme(t: ThemeId) {
+    if (t !== "custom") {
+      clearSkinTokens();
+      setSkin(null);
+      localStorage.setItem("voxply:appearance", JSON.stringify({ slot: t, skin: null }));
+    }
+    setTheme(t);
+  }
+
+  function handleSkinChange(s: VoxplySkin) {
+    setSkin(s);
+    setTheme("custom");
+    localStorage.setItem("voxply:appearance", JSON.stringify({ slot: "custom", skin: s }));
+  }
 
   // Document title (unread count)
   const unreadByHub = useMemo<Record<string, number>>(() => {
@@ -931,7 +970,9 @@ export default function App() {
           recoveryPhrase={recoveryPhrase}
           onShowRecovery={handleShowRecovery}
           theme={theme}
-          onThemeChange={setTheme}
+          onThemeChange={handleSetTheme}
+          skin={skin}
+          onSkinChange={handleSkinChange}
           isAdmin={isAdmin}
           blocks={Array.from(blockedUsers).map((p) => ({ pubkey: p, since: 0 }))}
           ignores={Array.from(ignoredUsers).map((p) => ({ pubkey: p, since: 0 }))}
