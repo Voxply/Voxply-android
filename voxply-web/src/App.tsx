@@ -68,6 +68,8 @@ import {
   validatePhrase,
   saveIdentity,
 } from "@identity/index";
+import { saveDraft, loadDraft, clearDraft } from "./utils/drafts";
+import { SearchBar } from "./components/SearchBar";
 
 // ---- Types ----
 
@@ -247,6 +249,8 @@ export default function App() {
 
   // Voice-not-available toast
   const [voiceToast, setVoiceToast] = useState(false);
+
+  const [showSearchBar, setShowSearchBar] = useState(false);
 
   // === Identity init ===
 
@@ -528,6 +532,7 @@ export default function App() {
     setReplyTarget(null);
     setEditingMessageId(null);
     if (activeHubId) clearUnread(activeHubId, ch.id);
+    if (activeHubId) setInputText(loadDraft(`${activeHubId}/${ch.id}`));
     try {
       const msgs = await getMessages(ch.id);
       setMessages(msgs);
@@ -540,6 +545,7 @@ export default function App() {
     if (!selectedChannel || !inputText.trim()) return;
     const text = inputText.trim();
     setInputText("");
+    if (activeHubId) clearDraft(`${activeHubId}/${selectedChannel.id}`);
     try {
       await sendMessage(selectedChannel.id, text, pendingAttachments.length ? pendingAttachments : undefined, replyTarget?.id);
       setPendingAttachments([]);
@@ -579,6 +585,11 @@ export default function App() {
       if (existing?.me) await removeReaction(selectedChannel.id, msgId, emoji);
       else await addReaction(selectedChannel.id, msgId, emoji);
     } catch {}
+  }
+
+  function handleInputTextChange(v: string) {
+    setInputText(v);
+    if (activeHubId && selectedChannel) saveDraft(`${activeHubId}/${selectedChannel.id}`, v);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -650,6 +661,21 @@ export default function App() {
     setRecoveryPhrase(null);
   }
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setShowSearchBar((v) => !v);
+      }
+      if (e.key === "Escape" && showSearchBar) {
+        setShowSearchBar(false);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showSearchBar]);
+
   const isAdmin = useMemo(
     () => meInfo?.roles?.some((r) => r.permissions?.includes("manage_hub")) ?? false,
     [meInfo],
@@ -684,6 +710,19 @@ export default function App() {
 
   return (
     <div className="app-layout">
+      {showSearchBar && (
+        <SearchBar
+          hubUrl={hubs.find((h) => h.hub_id === activeHubId)?.hub_url ?? ""}
+          activeChannelId={selectedChannel?.id}
+          onClose={() => setShowSearchBar(false)}
+          onNavigate={(channelId, _messageId) => {
+            const ch = channels.find((c) => c.id === channelId);
+            if (ch) void handleSelectChannel(ch);
+            setShowSearchBar(false);
+          }}
+        />
+      )}
+
       {voiceToast && (
         <div
           style={{
@@ -835,7 +874,7 @@ export default function App() {
         onMessagesScroll={() => {}}
         onSetUserContextMenu={() => {}}
         onSetEditingDraft={setEditingDraft}
-        onInputTextChange={setInputText}
+        onInputTextChange={handleInputTextChange}
         onKeyDown={handleKeyDown}
         onOpenImage={() => {}}
         onToast={() => {}}

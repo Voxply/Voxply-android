@@ -288,6 +288,7 @@ export function ChannelSidebar({
                         participants={voicePartByChannel[n.node.id] ?? []}
                         isCurrentVoiceChannel={voiceChannelId === n.node.id}
                         hubUrl={hubs.find((h) => h.hub_id === activeHubId)?.hub_url}
+                        activeHubId={activeHubId}
                         style={{ paddingLeft: n.depth * CHANNEL_INDENT_PX }}
                         onClick={() => onSelectChannel(n.node)}
                         onDoubleClick={() => { if (voiceChannelId !== n.node.id) onVoiceJoin(n.node); }}

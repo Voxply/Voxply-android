@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { hubFetch } from "@platform";
 import type {
   Channel,
   Hub,
@@ -34,6 +35,7 @@ import { UserListGrouped } from "./UserListGrouped";
 import { MessageEmbeds } from "./MessageEmbeds";
 import { MessageComponents } from "./MessageComponents";
 import { BotCard } from "./BotCard";
+import { EmojiPicker } from "./EmojiPicker";
 
 interface SelectedAllianceChannel {
   alliance_id: string;
@@ -156,12 +158,53 @@ export function ContentArea({
   const [slashSuggestions, setSlashSuggestions] = useState<SlashCommandEntry[]>([]);
   const [slashSelectedIdx, setSlashSelectedIdx] = useState(0);
   const [botCard, setBotCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
+  const [threadReplies, setThreadReplies] = useState<Record<string, Message[]>>({});
 
   const openBotCard = useCallback((pubkey: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setBotCard({ pubkey, rect });
   }, []);
+
+  useEffect(() => {
+    if (!selectedChannel) return;
+    try {
+      const raw = localStorage.getItem(`voxply.threads.${selectedChannel.id}`);
+      const ids: string[] = raw ? JSON.parse(raw) : [];
+      setExpandedThreads(new Set(ids));
+    } catch {
+      setExpandedThreads(new Set());
+    }
+  }, [selectedChannel?.id]);
+
+  function persistExpandedThreads(next: Set<string>) {
+    if (!selectedChannel) return;
+    try {
+      localStorage.setItem(`voxply.threads.${selectedChannel.id}`, JSON.stringify([...next]));
+    } catch {}
+  }
+
+  async function toggleThread(messageId: string) {
+    if (!selectedChannel) return;
+    const next = new Set(expandedThreads);
+    if (next.has(messageId)) {
+      next.delete(messageId);
+    } else {
+      next.add(messageId);
+      if (!threadReplies[messageId]) {
+        try {
+          const res = await hubFetch(`/channels/${selectedChannel.id}/messages?thread_root=${messageId}`);
+          const replies = await res.json() as Message[];
+          setThreadReplies((prev) => ({ ...prev, [messageId]: Array.isArray(replies) ? replies : [] }));
+        } catch {
+          setThreadReplies((prev) => ({ ...prev, [messageId]: [] }));
+        }
+      }
+    }
+    setExpandedThreads(next);
+    persistExpandedThreads(next);
+  }
 
   function handleSlashInputChange(value: string) {
     onInputTextChange(value);
@@ -645,6 +688,20 @@ export function ContentArea({
                             {isEphemeral && (
                               <div className="message-ephemeral-label">Only you can see this</div>
                             )}
+                            {(m.reply_count ?? 0) > 0 && (
+                              <button className="thread-chip" onClick={() => toggleThread(m.id)}>
+                                {expandedThreads.has(m.id) ? "▾" : "▸"} {m.reply_count} {m.reply_count === 1 ? "reply" : "replies"}
+                              </button>
+                            )}
+                            {expandedThreads.has(m.id) && (
+                              <div className="thread-replies">
+                                {(threadReplies[m.id] ?? []).map(reply => (
+                                  <div key={reply.id} className="thread-reply">
+                                    <strong>{reply.sender_name ?? reply.sender.slice(0, 8)}</strong>: {reply.content}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </>
                         )}
                       </div>
@@ -705,6 +762,10 @@ export function ContentArea({
                   onChange={(e) => { onAttachFiles(e.target.files); (e.target as HTMLInputElement).value = ""; }}
                 />
               </label>
+              <EmojiPicker
+                hubUrl={hubs.find((h) => h.hub_id === activeHubId)?.hub_url}
+                onPick={(text) => onInputTextChange(inputText + text)}
+              />
               <div style={{ position: "relative", flex: 1 }}>
                 {slashSuggestions.length > 0 && (
                   <div className="slash-command-popup">

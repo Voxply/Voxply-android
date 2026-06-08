@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Channel, VoiceParticipant } from "../types";
 import { ChannelIcon } from "./Icons";
+import { hasDraft } from "../utils/drafts";
 
 /** Hub icon wrapped in dnd-kit's useSortable so the user can drag-reorder
  * the hub sidebar. The drag handle is the whole icon — there's no second
@@ -38,6 +39,7 @@ export function SortableChannelItem({
   participants,
   isCurrentVoiceChannel,
   hubUrl,
+  activeHubId,
   style,
   onClick,
   onDoubleClick,
@@ -51,6 +53,7 @@ export function SortableChannelItem({
   participants: VoiceParticipant[];
   isCurrentVoiceChannel: boolean;
   hubUrl?: string;
+  activeHubId?: string | null;
   style?: React.CSSProperties;
   onClick: () => void;
   onDoubleClick: () => void;
@@ -103,6 +106,9 @@ export function SortableChannelItem({
             {unread && <span className="channel-unread-dot" />}
             <ChannelIcon icon={channel.icon} customIconSvg={channel.custom_icon_svg} />
             {" "}{channel.name}
+            {activeHubId && hasDraft(`${activeHubId}/${channel.id}`) && (
+              <span className="channel-draft-badge" title="Unsent draft">Draft</span>
+            )}
             {muted && <span className="channel-muted-icon" title="Muted">🔕</span>}
             {participants.length > 0 && (
               <span
