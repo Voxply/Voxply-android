@@ -3,6 +3,7 @@ import type { Hub } from "@shared/types";
 import { PairingSection } from "./PairingSection";
 import { IdentityBackupSection } from "./IdentityBackupSection";
 import { RecoveryContactsSection } from "./RecoveryContactsSection";
+import { BlockIgnoreSection, type BlockEntry, type IgnoreEntry } from "./BlockIgnoreSection";
 
 export type SettingsTab = "profile" | "account" | "appearance" | "devices";
 
@@ -20,6 +21,11 @@ interface Props {
   onThemeChange: (t: "calm" | "classic" | "linear" | "light") => void;
   onIdentityImported?: () => void;
   isAdmin?: boolean;
+  blocks?: BlockEntry[];
+  ignores?: IgnoreEntry[];
+  onUnblock?: (pubkey: string) => void;
+  onUnignore?: (pubkey: string) => void;
+  knownNames?: Record<string, string | null>;
 }
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -118,6 +124,15 @@ export function SettingsPage(props: Props) {
               <label className="settings-label">Recovery contacts</label>
               <RecoveryContactsSection isAdmin={isAdmin} />
             </div>
+            {props.blocks !== undefined && (
+              <BlockIgnoreSection
+                blocks={props.blocks}
+                ignores={props.ignores ?? []}
+                onUnblock={props.onUnblock ?? (() => {})}
+                onUnignore={props.onUnignore ?? (() => {})}
+                knownNames={props.knownNames ?? {}}
+              />
+            )}
           </section>
         )}
 

@@ -52,6 +52,16 @@ export {
 export { sendComponentInteraction } from "./commands/bots";
 
 export {
+  getRecoveryContacts,
+  setRecoveryContacts,
+  removeRecoveryContact,
+  listAdminRecoveryRequests,
+  approveRecoveryRequest,
+  denyRecoveryRequest,
+  updateDmBlocks,
+} from "./commands/hubAdmin";
+
+export {
   getPairedIdentity,
   startPairingOffer,
   pollPairingStatus,

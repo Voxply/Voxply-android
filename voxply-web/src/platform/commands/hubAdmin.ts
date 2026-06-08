@@ -39,3 +39,12 @@ export async function approveRecoveryRequest(requestId: string): Promise<void> {
 export async function denyRecoveryRequest(requestId: string): Promise<void> {
   await hubFetch(`/admin/recovery/${requestId}/deny`, { method: "POST" });
 }
+
+// ---- DM blocks ----
+
+export async function updateDmBlocks(blockedPubkeys: string[]): Promise<void> {
+  await hubFetch("/identity/dm-blocks", {
+    method: "PUT",
+    body: JSON.stringify({ blocked_pubkeys: blockedPubkeys }),
+  });
+}

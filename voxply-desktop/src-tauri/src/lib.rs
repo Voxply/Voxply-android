@@ -4786,6 +4786,7 @@ pub fn run() {
             list_admin_recovery_requests,
             approve_recovery_request,
             deny_recovery_request,
+            update_dm_blocks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -4948,6 +4949,30 @@ async fn deny_recovery_request(
         .http_client
         .post(format!("{base}/admin/recovery/{request_id}/deny"))
         .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_dm_blocks(
+    hub_url: String,
+    blocked: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    #[derive(serde::Serialize)]
+    struct Payload { blocked_pubkeys: Vec<String> }
+    let resp = state
+        .http_client
+        .put(format!("{base}/identity/dm-blocks"))
+        .bearer_auth(&token)
+        .json(&Payload { blocked_pubkeys: blocked })
         .send()
         .await
         .map_err(|e| format!("Failed: {e}"))?;

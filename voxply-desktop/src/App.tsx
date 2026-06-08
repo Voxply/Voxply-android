@@ -139,9 +139,12 @@ function App() {
       const next = new Set(prev);
       if (next.has(pubkey)) next.delete(pubkey);
       else next.add(pubkey);
-      invoke("save_blocked_users", {
-        blocked: Array.from(next),
-      }).catch(() => {});
+      const list = Array.from(next);
+      invoke("save_blocked_users", { blocked: list }).catch(() => {});
+      const activeHub = hubs.find((h) => h.hub_id === activeHubId);
+      if (activeHub) {
+        invoke("update_dm_blocks", { hubUrl: activeHub.hub_url, blocked: list }).catch(() => {});
+      }
       return next;
     });
   }
