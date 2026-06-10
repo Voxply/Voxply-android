@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { PostSummary } from "../types";
-import { formatRelative } from "../utils/format";
+import { formatRelative } from "@voxply/utils";
 
 interface Props {
   channelId: string;

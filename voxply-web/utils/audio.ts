@@ -1,10 +1,3 @@
-// WebAudio cues. Synthesized on demand so we don't bundle audio files —
-// these are short tones with no licensing concerns and the user can tell
-// what they're hearing without waiting for a file fetch on first play.
-//
-// Failures are intentionally swallowed: audio is best-effort, and the
-// browser can refuse to start an AudioContext before user interaction.
-
 let cachedAudioCtx: AudioContext | null = null;
 
 function getCtx(): AudioContext {
@@ -16,9 +9,6 @@ function getCtx(): AudioContext {
   );
 }
 
-/**
- * Plays a short two-tone "ping" — used for @mention notifications.
- */
 export function playMentionPing() {
   try {
     const ctx = getCtx();
@@ -42,10 +32,6 @@ export function playMentionPing() {
   }
 }
 
-/**
- * Voice-channel join/leave cues. Rising two-tone for join (connecting
- * feel), descending two-tone for leave.
- */
 export function playVoiceTone(direction: "up" | "down") {
   try {
     const ctx = getCtx();
@@ -63,11 +49,11 @@ export function playVoiceTone(direction: "up" | "down") {
       osc.stop(now + start + dur);
     };
     if (direction === "up") {
-      tone(523, 0, 0.1); // C5
-      tone(784, 0.07, 0.16); // G5
+      tone(523, 0, 0.1);
+      tone(784, 0.07, 0.16);
     } else {
-      tone(784, 0, 0.1); // G5
-      tone(523, 0.07, 0.16); // C5
+      tone(784, 0, 0.1);
+      tone(523, 0.07, 0.16);
     }
   } catch {
     // best-effort

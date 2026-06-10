@@ -1,4 +1,4 @@
-import { formatPubkey } from "../utils/format";
+import { formatPubkey } from "@voxply/utils";
 
 export interface BlockEntry { pubkey: string; since: number }
 export interface IgnoreEntry { pubkey: string; since: number }

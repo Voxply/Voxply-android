@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { RecoveryContactEntry, RecoveryPendingRequest } from "../types";
-import { formatPubkey, formatRelative } from "../utils/format";
+import { formatPubkey, formatRelative } from "@voxply/utils";
 import {
   getRecoveryContacts,
   setRecoveryContacts,

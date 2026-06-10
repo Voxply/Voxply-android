@@ -16,8 +16,9 @@
       "@shared/hooks/*": ["./src/hooks/*"],
       "@shared/constants": ["./src/constants"],
       "@platform": ["./src/platform/index"],
-      "@identity/*": ["./src/identity/*"]
+      "@identity/*": ["./src/identity/*"],
+      "@voxply/utils": ["./utils/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "utils"]
 }

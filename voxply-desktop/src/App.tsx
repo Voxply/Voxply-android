@@ -44,11 +44,18 @@ import { applySkinTokens, clearSkinTokens } from "./skinValidation";
 import { ScreenSharePicker } from "./components/ScreenSharePicker";
 import { useVoice } from "./hooks/useVoice";
 import { MAX_ATTACHMENT_BYTES, DEMO_HUB_URL } from "./constants";
-import { formatPubkey, mentionsName, newProfileId } from "./utils/format";
-import { playMentionPing } from "./utils/audio";
+import {
+  formatPubkey,
+  mentionsName,
+  newProfileId,
+  playMentionPing,
+  buildChannelTree,
+  flattenTree,
+  descendantIds,
+  computeDepth,
+  useReconnectBackoff,
+} from "@voxply/utils";
 import { readFileAsB64 } from "./utils/files";
-import { buildChannelTree, flattenTree, descendantIds, computeDepth } from "./utils/channels";
-import { useReconnectBackoff } from "./hooks/useReconnectBackoff";
 import { Lightbox } from "./components/Lightbox";
 import { ChannelPalette } from "./components/ChannelPalette";
 import { ChannelBansModal } from "./components/ChannelBansModal";

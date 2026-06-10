@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { InviteInfo } from "../types";
 import { EXPIRY_OPTIONS } from "../constants";
-import { formatRelative } from "../utils/format";
+import { formatRelative } from "@voxply/utils";
 
 export function InvitesSection({
   invites,

@@ -24,7 +24,7 @@ import {
   formatDayLabel,
   formatFullTimestamp,
   formatRelative,
-} from "../utils/format";
+} from "@voxply/utils";
 import { Avatar } from "./Avatar";
 import { TypingIndicator } from "./TypingIndicator";
 import { MessageReactions } from "./MessageReactions";

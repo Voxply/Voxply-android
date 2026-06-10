@@ -4,25 +4,13 @@ export interface ReconnectBackoff {
   reconnectingHubs: Record<string, boolean>;
   scheduleReconnect(hubId: string): void;
   clearReconnectTimer(hubId: string): void;
-  /** Directly flip the reconnecting flag — used by manual reconnect logic. */
   setReconnecting(hubId: string, value: boolean): void;
-  /** Reset the attempt counter to 0 — call before a manual connect attempt. */
   resetAttempts(hubId: string): void;
-  /** Call when a hub's WS connection is confirmed up: cancels the timer,
-   *  resets the attempt counter, and clears the reconnecting flag. */
   onReconnected(hubId: string): void;
-  /** Call when the user leaves a hub: cancels the timer and deletes the
-   *  attempt entry so it doesn't linger in the refs. */
   onHubRemoved(hubId: string): void;
-  /** Cancel all pending timers — call in the effect cleanup on unmount. */
   cancelAll(): void;
 }
 
-/**
- * Exponential-backoff reconnect mechanism (1s, 2s, 4s, …, capped at 30s).
- * `onAttempt` is called on each timer tick; it should invoke the reconnect
- * command. On failure the hook schedules the next retry automatically.
- */
 export function useReconnectBackoff(
   onAttempt: (hubId: string) => Promise<void>,
 ): ReconnectBackoff {
@@ -30,8 +18,6 @@ export function useReconnectBackoff(
   const attempts = useRef<Record<string, number>>({});
   const [reconnectingHubs, setReconnectingHubs] = useState<Record<string, boolean>>({});
 
-  // Keep onAttempt stable across renders so timer callbacks always see the
-  // latest version without needing to be re-registered.
   const onAttemptRef = useRef(onAttempt);
   onAttemptRef.current = onAttempt;
 
@@ -53,7 +39,6 @@ export function useReconnectBackoff(
       attempts.current[hubId] = attempt + 1;
       try {
         await onAttemptRef.current(hubId);
-        // Success: hub-ws-status event will call onReconnected.
       } catch {
         scheduleReconnect(hubId);
       }

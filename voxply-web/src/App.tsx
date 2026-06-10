@@ -27,8 +27,7 @@ import { HubSidebar } from "@components/HubSidebar";
 import { ChannelSidebar } from "@components/ChannelSidebar";
 import { ContentArea } from "@components/ContentArea";
 import { AddHubModal } from "@components/AddHubModal";
-import { buildChannelTree } from "@shared/utils/channels";
-import type { TreeNode } from "@shared/utils/channels";
+import { buildChannelTree, type TreeNode } from "@voxply/utils";
 import type { ScreenShareViewerRef } from "@components/ScreenShareViewer";
 import {
   restorePersistedHubs,

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { Channel, VoiceParticipant, VoiceMuteInfo, ScreenShareOpts } from "../types";
 import { useScreenShare } from "./useScreenShare";
 import { useScreenShareViewer } from "./useScreenShareViewer";
-import { playVoiceTone } from "../utils/audio";
+import { playVoiceTone } from "@voxply/utils";
 
 interface UseVoiceParams {
   activeHubId: string | null;
