@@ -71,6 +71,7 @@ jobs:
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi
+          components: rustfmt, clippy
 
       - name: Rust cache
         uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
@@ -113,6 +114,16 @@ jobs:
       - name: TypeScript check
         working-directory: android
         run: npx tsc --noEmit
+
+      - name: vitest (voxply-web)
+        working-directory: voxply-web
+        run: npm test
+
+      - name: cargo fmt check
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy (voxply-desktop)
+        run: cargo clippy -p voxply-desktop -- -D warnings
 
       - name: Decode release keystore
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}

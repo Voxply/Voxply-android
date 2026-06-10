@@ -7,7 +7,6 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
-use x25519_dalek;
 
 mod auth_creds;
 mod home_hub;
@@ -1176,7 +1175,7 @@ async fn spawn_ws_task(
                             })
                         }
                     };
-                    if ws_tx.send(WsMessage::Text(json.to_string().into())).await.is_err() {
+                    if ws_tx.send(WsMessage::Text(json.to_string())).await.is_err() {
                         break;
                     }
                 }
@@ -5005,6 +5004,7 @@ struct SetContactsPayload {
     threshold: u32,
 }
 
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize, Clone)]
 struct RecoveryContactOut {
     pubkey: String,

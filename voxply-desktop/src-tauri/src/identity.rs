@@ -141,7 +141,7 @@ impl Identity {
     pub fn dh_keypair(&self) -> (x25519_dalek::StaticSecret, x25519_dalek::PublicKey) {
         use sha2::Sha512;
         let seed = self.signing_key.to_bytes();
-        let hash = Sha512::digest(&seed);
+        let hash = Sha512::digest(seed);
         let mut scalar = [0u8; 32];
         scalar.copy_from_slice(&hash[..32]);
         scalar[0] &= 248;
@@ -362,7 +362,7 @@ pub fn verify_security_level(public_key_hex: &str, nonce: u64, claimed_level: u3
 fn hash_level(public_key_hex: &str, nonce: u64) -> u32 {
     let mut hasher = Sha256::new();
     hasher.update(public_key_hex.as_bytes());
-    hasher.update(&nonce.to_le_bytes());
+    hasher.update(nonce.to_le_bytes());
     let result = hasher.finalize();
     leading_zero_bits(&result)
 }
