@@ -1105,7 +1105,7 @@ mod wire_vector_tests {
 
     #[test]
     fn dm_envelope_signing_bytes_vector() {
-        let sb = crate::dm_envelope_signing_bytes(
+        let sb = crate::dm::dm_envelope_signing_bytes(
             DM_CONV_ID,
             DM_CIPHERTEXT_HEX,
             DM_NONCE_HEX,
@@ -1116,7 +1116,7 @@ mod wire_vector_tests {
 
     #[test]
     fn dm_envelope_signature_vector() {
-        let sb = crate::dm_envelope_signing_bytes(
+        let sb = crate::dm::dm_envelope_signing_bytes(
             DM_CONV_ID,
             DM_CIPHERTEXT_HEX,
             DM_NONCE_HEX,

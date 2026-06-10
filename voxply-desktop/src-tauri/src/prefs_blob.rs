@@ -12,7 +12,7 @@ use sha2::Sha256;
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct LocalPrefs {
     pub blocked_users: Vec<String>,
-    pub voice_settings: crate::StoredVoiceSettings,
+    pub voice_settings: crate::state::StoredVoiceSettings,
 }
 
 // ---- Blob key derivation ----
@@ -82,8 +82,8 @@ pub async fn push_prefs_blob(
     home_hubs: &[String],
     client: &reqwest::Client,
 ) -> Result<()> {
-    let blocked = crate::load_blocked_users().unwrap_or_default();
-    let voice = crate::load_voice_settings();
+    let blocked = crate::prefs::load_blocked_users().unwrap_or_default();
+    let voice = crate::prefs::load_voice_settings();
     let prefs = LocalPrefs {
         blocked_users: blocked,
         voice_settings: voice,

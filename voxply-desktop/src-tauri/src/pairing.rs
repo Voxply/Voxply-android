@@ -432,44 +432,45 @@ pub async fn save_paired_identity(
     std::fs::write(&path, text).map_err(|e| format!("write: {e}"))?;
 
     // Attempt to unwrap the blob key and pull current prefs from the home hubs.
-    let sync_result =
-        if !wrapped_blob_key_hex.is_empty() && wrapped_blob_key_hex != hex::encode([0u8; 32]) {
-            match crate::identity::unwrap_blob_key(&wrapped_blob_key_hex, &secret_array) {
-                Ok(blob_key) => {
-                    let client = http_client().unwrap_or_else(|_| reqwest::Client::new());
-                    match crate::prefs_blob::pull_prefs_blob(
-                        &master_pubkey,
-                        &home_hubs,
-                        &blob_key,
-                        &client,
-                    )
-                    .await
-                    {
-                        Ok(prefs) => {
-                            let _ = crate::save_blocked_users_raw(&prefs.blocked_users);
-                            let _ = crate::save_voice_settings_to_disk(&prefs.voice_settings);
-                            SyncResult {
-                                synced: true,
-                                error: None,
-                            }
+    let sync_result = if !wrapped_blob_key_hex.is_empty()
+        && wrapped_blob_key_hex != hex::encode([0u8; 32])
+    {
+        match crate::identity::unwrap_blob_key(&wrapped_blob_key_hex, &secret_array) {
+            Ok(blob_key) => {
+                let client = http_client().unwrap_or_else(|_| reqwest::Client::new());
+                match crate::prefs_blob::pull_prefs_blob(
+                    &master_pubkey,
+                    &home_hubs,
+                    &blob_key,
+                    &client,
+                )
+                .await
+                {
+                    Ok(prefs) => {
+                        let _ = crate::prefs::save_blocked_users_raw(&prefs.blocked_users);
+                        let _ = crate::prefs::save_voice_settings_to_disk(&prefs.voice_settings);
+                        SyncResult {
+                            synced: true,
+                            error: None,
                         }
-                        Err(e) => SyncResult {
-                            synced: false,
-                            error: Some(e.to_string()),
-                        },
                     }
+                    Err(e) => SyncResult {
+                        synced: false,
+                        error: Some(e.to_string()),
+                    },
                 }
-                Err(e) => SyncResult {
-                    synced: false,
-                    error: Some(format!("unwrap failed: {e}")),
-                },
             }
-        } else {
-            SyncResult {
+            Err(e) => SyncResult {
                 synced: false,
-                error: Some("no blob key in pairing response".to_string()),
-            }
-        };
+                error: Some(format!("unwrap failed: {e}")),
+            },
+        }
+    } else {
+        SyncResult {
+            synced: false,
+            error: Some("no blob key in pairing response".to_string()),
+        }
+    };
 
     Ok(sync_result)
 }
