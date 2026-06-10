@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Fetch voxply-voice crate (Voxply-desktop)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: Voxply/Voxply-desktop
           sparse-checkout: |
@@ -47,7 +47,7 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: >-
             build-tools;36.1.0
@@ -55,19 +55,19 @@ jobs:
             ndk;27.0.12077973
 
       - name: Set up Rust (stable, Android targets)
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi
 
       - name: Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
         with:
           workspaces: android/src-tauri
 
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: |
             android/package-lock.json

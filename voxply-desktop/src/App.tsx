@@ -145,7 +145,7 @@ function App() {
       invoke("save_blocked_users", { blocked: list }).catch(() => {});
       const activeHub = hubs.find((h) => h.hub_id === activeHubId);
       if (activeHub) {
-        invoke("update_dm_blocks", { hubUrl: activeHub.hub_url, blocked: list }).catch(() => {});
+        invoke("update_dm_blocks", { blocked: list }).catch(() => {});
       }
       return next;
     });
@@ -1755,15 +1755,23 @@ function App() {
         setShowAddHub(true);
       }
     });
-    const unlisten = listen<string>("join-hub-requested", (event) => {
+    let cancelled = false;
+    let resolvedUnlisten: (() => void) | undefined;
+    listen<string>("join-hub-requested", (event) => {
       const parsed = parseHubInput(event.payload);
       if (parsed) {
         setHubUrl(parsed.hubUrl);
         setInviteCode(parsed.inviteCode);
         setShowAddHub(true);
       }
+    }).then((fn) => {
+      if (cancelled) fn();
+      else resolvedUnlisten = fn;
     });
-    return () => { unlisten.then((fn) => fn()); };
+    return () => {
+      cancelled = true;
+      resolvedUnlisten?.();
+    };
   }, []);
 
   // Debounced fetch of /info while the user types a hub URL.

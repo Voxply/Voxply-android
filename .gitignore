@@ -8,4 +8,6 @@ voxply-android/src-tauri/gen/
 voxply-desktop/src-tauri/gen/
 *.keystore
 *.keystore.b64
+*.key
+*.pem
 .env
