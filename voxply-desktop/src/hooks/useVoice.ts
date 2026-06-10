@@ -61,8 +61,10 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
     }
     tick();
     const handle = setInterval(tick, 1500);
-    let unlisten: (() => void) | undefined;
-    listen<void>("voice-update", () => { if (!cancelled) tick(); }).then((fn) => { unlisten = fn; });
+    let unlistenJoined: (() => void) | undefined;
+    let unlistenLeft: (() => void) | undefined;
+    listen("voice-participant-joined", () => { if (!cancelled) tick(); }).then((fn) => { unlistenJoined = fn; });
+    listen("voice-participant-left", () => { if (!cancelled) tick(); }).then((fn) => { unlistenLeft = fn; });
 
     let unlistenSpeaking: (() => void) | undefined;
     listen<{ public_key: string; speaking: boolean }>("voice-participant-speaking", (e) => {
@@ -79,7 +81,8 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
     return () => {
       cancelled = true;
       clearInterval(handle);
-      unlisten?.();
+      unlistenJoined?.();
+      unlistenLeft?.();
       unlistenSpeaking?.();
     };
   }, [activeHubId]);

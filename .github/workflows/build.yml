@@ -40,6 +40,19 @@ jobs:
           anyhow = "1"
           WORKSPACE_EOF
 
+      - name: Fetch canonical shared packages (Voxply-web)
+        uses: actions/checkout@v6
+        with:
+          repository: Voxply/Voxply-web
+          sparse-checkout: |
+            i18n
+            utils
+          sparse-checkout-cone-mode: false
+          path: _voxply_web
+
+      - name: Check vendored i18n/utils have not drifted
+        run: sh scripts/check-vendored.sh _voxply_web
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
