@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { hubFetch } from "@platform";
 import type {
   Channel,
@@ -15,27 +15,14 @@ import type {
 } from "../types";
 import { ScreenShareViewer } from "./ScreenShareViewer";
 import type { ScreenShareViewerRef } from "./ScreenShareViewer";
-import {
-  formatPubkey,
-  meAction,
-  mentionsName,
-  colorForKey,
-  dayKey,
-  formatDayLabel,
-  formatFullTimestamp,
-  formatRelative,
-} from "@voxply/utils";
-import { Avatar } from "./Avatar";
-import { TypingIndicator } from "./TypingIndicator";
-import { MessageReactions } from "./MessageReactions";
-import { ReactionPicker } from "./ReactionPicker";
-import { PendingAttachments, MessageAttachments } from "./Attachments";
-import { MessageContent } from "./MessageContent";
 import { UserListGrouped } from "./UserListGrouped";
-import { MessageEmbeds } from "./MessageEmbeds";
-import { MessageComponents } from "./MessageComponents";
 import { BotCard } from "./BotCard";
-import { EmojiPicker } from "./EmojiPicker";
+import { ReconnectBanner } from "./content/ReconnectBanner";
+import { DmView } from "./content/DmView";
+import { ChannelHeader } from "./content/ChannelHeader";
+import { ChannelMessageList } from "./content/ChannelMessageList";
+import { ChannelComposer } from "./content/ChannelComposer";
+import { AllianceView } from "./content/AllianceView";
 
 interface SelectedAllianceChannel {
   alliance_id: string;
@@ -176,7 +163,7 @@ export function ContentArea({
     } catch {
       setExpandedThreads(new Set());
     }
-  }, [selectedChannel?.id]);
+  }, [selectedChannel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function persistExpandedThreads(next: Set<string>) {
     if (!selectedChannel) return;
@@ -260,596 +247,139 @@ export function ContentArea({
     // Actual WS send is handled inside MessageComponents via platform session.
   }
 
+  const activeHub = hubs.find((h) => h.hub_id === activeHubId);
+
   return (
     <>
       <div className="content">
         {activeHubId && hubConnected[activeHubId] === false && (
-          <div className="reconnect-banner">
-            <span>{reconnectingHubs[activeHubId] ? "Reconnecting…" : "Disconnected from hub."}</span>
-            <button
-              className="btn-small"
-              onClick={onReconnect}
-              disabled={!!reconnectingHubs[activeHubId]}
-            >
-              {reconnectingHubs[activeHubId] ? "Working…" : "Reconnect"}
-            </button>
-          </div>
+          <ReconnectBanner
+            reconnecting={!!reconnectingHubs[activeHubId]}
+            onReconnect={onReconnect}
+          />
         )}
 
         {view === "dms" ? (
           selectedConversation ? (
-            <>
-              <div className="channel-header">
-                <h3>
-                  @{" "}
-                  {selectedConversation.members
-                    .filter((m) => m !== publicKey)
-                    .map((k) => {
-                      const u = users.find((u) => u.public_key === k);
-                      return u?.display_name || k.slice(0, 12);
-                    })
-                    .join(", ")}
-                </h3>
-              </div>
-              {selectedConversation.conv_type === "group" && (
-                <div className="dm-group-banner">
-                  Group DMs are not end-to-end encrypted yet.
-                </div>
-              )}
-              <div className="messages">
-                {(dmMessages[selectedConversation.id] || [])
-                  .filter((m) => !blockedUsers.has(m.sender))
-                  .map((m, i) => {
-                    const senderLabel =
-                      users.find((u) => u.public_key === m.sender)?.display_name ||
-                      m.sender_name ||
-                      formatPubkey(m.sender);
-                    const showFailed = m.delivery_failed === true && m.sender === publicKey;
-                    const failedBadge = showFailed ? (
-                      <span
-                        className="dm-delivery-failed"
-                        title="The sender's hub couldn't deliver this to one or more recipients after retries."
-                      >
-                        ⚠ Delivery failed
-                      </span>
-                    ) : null;
-                    const lockIcon = m.is_encrypted
-                      ? <span className="dm-lock-icon" title="End-to-end encrypted">🔒</span>
-                      : null;
-                    const actionText = meAction(m.content);
-                    if (actionText !== null) {
-                      return (
-                        <div key={m.id ?? `${m.timestamp}-${m.sender}`} className="message message-action">
-                          <span className="action-asterisk">*</span>
-                          <span className="message-sender" style={{ color: colorForKey(m.sender) }}>
-                            {senderLabel}
-                          </span>
-                          <span className="action-text">
-                            <MessageContent content={actionText} knownNames={knownDisplayNames} myName={myDisplayName} />
-                          </span>
-                          <span className="message-time" title={formatFullTimestamp(m.timestamp)}>
-                            {formatRelative(m.timestamp)}
-                          </span>
-                          {lockIcon}
-                          {failedBadge}
-                        </div>
-                      );
-                    }
-                    return (
-                      <div key={m.id ?? `${m.timestamp}-${m.sender}`} className="message">
-                        <span className="message-sender" style={{ color: colorForKey(m.sender) }}>
-                          {senderLabel}
-                        </span>
-                        <span className="message-time" title={formatFullTimestamp(m.timestamp)}>
-                          {formatRelative(m.timestamp)}
-                        </span>
-                        {lockIcon}
-                        <span className="message-content">
-                          <MessageContent content={m.content} knownNames={knownDisplayNames} myName={myDisplayName} />
-                        </span>
-                        {m.attachments && m.attachments.length > 0 && (
-                          <MessageAttachments items={m.attachments} onImageClick={onOpenImage} />
-                        )}
-                        {failedBadge}
-                      </div>
-                    );
-                  })}
-                <div ref={messagesEndRef} />
-              </div>
-              <TypingIndicator typers={Object.values(dmTypingByKey)} />
-              {pendingAttachments.length > 0 && (
-                <PendingAttachments
-                  items={pendingAttachments}
-                  onRemove={(i) => onSetPendingAttachments(pendingAttachments.filter((_, idx) => idx !== i))}
-                />
-              )}
-              <div
-                className="input-area"
-                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
-                onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length > 0) onAttachFiles(e.dataTransfer.files); }}
-              >
-                <label className="btn-attach" title="Attach file">
-                  📎
-                  <input
-                    type="file"
-                    multiple
-                    style={{ display: "none" }}
-                    onChange={(e) => { onAttachFiles(e.target.files); (e.target as HTMLInputElement).value = ""; }}
-                  />
-                </label>
-                <input
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => { onInputTextChange(e.target.value); if (e.target.value.length > 0) onPingDmTyping(); }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSendDm(); }
-                  }}
-                  placeholder="Send a message..."
-                />
-                <button onClick={onSendDm}>Send</button>
-              </div>
-            </>
+            <DmView
+              selectedConversation={selectedConversation}
+              dmMessages={dmMessages}
+              publicKey={publicKey}
+              blockedUsers={blockedUsers}
+              users={users}
+              knownDisplayNames={knownDisplayNames}
+              myDisplayName={myDisplayName}
+              pendingAttachments={pendingAttachments}
+              inputText={inputText}
+              dmTypingByKey={dmTypingByKey}
+              messagesEndRef={messagesEndRef}
+              onSetPendingAttachments={onSetPendingAttachments}
+              onAttachFiles={onAttachFiles}
+              onInputTextChange={onInputTextChange}
+              onPingDmTyping={onPingDmTyping}
+              onSendDm={onSendDm}
+              onOpenImage={onOpenImage}
+            />
           ) : (
             <div className="no-channel"><p>Select a conversation</p></div>
           )
         ) : selectedChannel ? (
           <>
-            <div className="channel-header">
-              <div className="channel-header-info">
-                <h3># {selectedChannel.name}</h3>
-                {selectedChannel.description ? (
-                  <p
-                    className={`channel-description ${isAdmin ? "editable" : ""}`}
-                    onClick={() => { if (isAdmin) onOpenEditDescription(selectedChannel); }}
-                    title={isAdmin ? "Click to edit" : undefined}
-                  >
-                    {selectedChannel.description}
-                  </p>
-                ) : isAdmin ? (
-                  <p
-                    className="channel-description editable muted"
-                    onClick={() => onOpenEditDescription(selectedChannel)}
-                    title="Click to add a description"
-                  >
-                    Add a description…
-                  </p>
-                ) : null}
-              </div>
-              {!selectedChannel.is_category && (
-                voiceChannelId === selectedChannel.id ? (
-                  <button
-                    onClick={onVoiceLeave}
-                    className="btn-voice-header btn-voice-leave"
-                    title="Leave voice"
-                  >
-                    🔴 Leave Voice
-                  </button>
-                ) : (
-                  <button
-                    onClick={onVoiceJoin}
-                    className="btn-voice-header btn-voice-join"
-                    title="Join voice in this channel"
-                  >
-                    🎙 Join Voice
-                  </button>
-                )
-              )}
-              <button
-                onClick={() => searchOpen ? onCloseSearch() : onSetSearchOpen(true)}
-                className="btn-icon-header"
-                title="Search messages"
-                aria-label="Search messages"
-              >
-                🔍
-              </button>
-              <button
-                onClick={() => onSetMemberSidebarHidden(!memberSidebarHidden)}
-                className="btn-icon-header"
-                title={memberSidebarHidden ? "Show member list" : "Hide member list"}
-                aria-label={memberSidebarHidden ? "Show member list" : "Hide member list"}
-              >
-                {memberSidebarHidden ? "👥" : "👤"}
-              </button>
-            </div>
-            {searchOpen && (
-              <div className="search-bar">
-                <input
-                  type="text"
-                  autoFocus
-                  value={searchQuery}
-                  onChange={(e) => onSetSearchQuery(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Escape") onCloseSearch(); }}
-                  placeholder={`Search in #${selectedChannel.name}…`}
-                />
-                {searchResults !== null && (
-                  <span className="muted search-count">
-                    {searchResults.length} match{searchResults.length === 1 ? "" : "es"}
-                  </span>
-                )}
-                <button onClick={onCloseSearch} className="btn-small">Close</button>
-              </div>
-            )}
-            {activeScreenShares.length > 0 && (
-              <ScreenShareViewer
-                ref={screenShareViewerRef}
-                streams={activeScreenShares}
-              />
-            )}
-            {sharing && (
-              <div className="screen-share-active-bar">
-                <span>You're sharing</span>
-                {(shareKbps ?? 0) > 0 && (
-                  <span className="muted">{shareKbps} kbps</span>
-                )}
-                <button className="stop-btn" onClick={onStopShare}>
-                  Stop sharing
-                </button>
-              </div>
-            )}
-            <div className="messages" role="list" aria-label="Messages" ref={messagesContainerRef} onScroll={onMessagesScroll}>
-              {(searchResults ?? messages).length === 0 && (
-                <div className="channel-empty">
-                  {searchResults !== null ? (
-                    <p>No messages match your search.</p>
-                  ) : (
-                    <>
-                      <div className="channel-empty-icon">👋</div>
-                      <h2>Welcome to #{selectedChannel.name}</h2>
-                      <p>
-                        {selectedChannel.description
-                          ? selectedChannel.description
-                          : "This is the start of the channel — say hello!"}
-                      </p>
-                      <ul className="channel-empty-tips">
-                        <li>Click <strong>Join Voice</strong> in the header to start a voice session here — or double-click any channel in the sidebar.</li>
-                        <li><strong>Drag a file</strong> into the message area to share it (up to 3 MB).</li>
-                        <li>
-                          Type <code>@name</code> to mention someone,{" "}
-                          <code>/me</code> for an action, or paste a code block with <code>```</code>.
-                        </li>
-                        <li>Press <kbd>Ctrl</kbd>+<kbd>K</kbd> to jump to another channel from anywhere.</li>
-                      </ul>
-                    </>
-                  )}
-                </div>
-              )}
-              {(searchResults ?? messages)
-                .filter((m) => !blockedUsers.has(m.sender))
-                .map((m, i, arr) => {
-                  const showSeparator = i === 0 || dayKey(m.created_at) !== dayKey(arr[i - 1].created_at);
-                  const isMine = m.sender === publicKey;
-                  const canDelete =
-                    isMine ||
-                    myRoles.some((r) => r.permissions.some((p) => p === "admin" || p === "manage_messages"));
-                  const isEditing = editingMessageId === m.id;
-                  const senderUser = users.find((u) => u.public_key === m.sender);
-                  const senderLabel = senderUser?.display_name || m.sender_name || formatPubkey(m.sender);
-                  const isMentioned = m.sender !== publicKey && mentionsName(m.content, myDisplayName);
-                  const isEphemeral = !!m.visible_to_pubkey && m.visible_to_pubkey === publicKey;
-                  const actionText = meAction(m.content);
-                  if (actionText !== null) {
-                    return (
-                      <React.Fragment key={m.id}>
-                        {showSeparator && (
-                          <div className="day-separator">
-                            <span className="day-separator-label">{formatDayLabel(m.created_at)}</span>
-                          </div>
-                        )}
-                        <div
-                          id={`msg-${m.id}`}
-                          role="listitem"
-                          className={`message message-action ${isMentioned ? "message-mentioned" : ""}`}
-                        >
-                          <span className="action-asterisk">*</span>
-                          <span className="message-sender" style={{ color: colorForKey(m.sender) }}>
-                            {senderLabel}
-                          </span>
-                          <span className="action-text">
-                            <MessageContent content={actionText} knownNames={knownDisplayNames} myName={myDisplayName} />
-                          </span>
-                        </div>
-                      </React.Fragment>
-                    );
-                  }
-                  return (
-                    <React.Fragment key={m.id}>
-                      {showSeparator && (
-                        <div className="day-separator">
-                          <span className="day-separator-label">{formatDayLabel(m.created_at)}</span>
-                        </div>
-                      )}
-                      <div
-                        id={`msg-${m.id}`}
-                        role="listitem"
-                        className={`message ${isMentioned ? "message-mentioned" : ""} ${isEphemeral ? "message-ephemeral" : ""}`}
-                      >
-                        {m.reply_to && (
-                          <div
-                            className="message-reply-preview"
-                            onClick={() => m.reply_to && onScrollToMessage(m.reply_to.message_id)}
-                            title="Jump to original"
-                          >
-                            <span className="reply-arrow">↪</span>
-                            <span className="reply-author">
-                              {m.reply_to.sender_name || formatPubkey(m.reply_to.sender)}
-                            </span>
-                            <span className="reply-snippet">{m.reply_to.content_preview}</span>
-                          </div>
-                        )}
-                        <span
-                          style={{ cursor: senderUser?.is_bot ? "pointer" : undefined }}
-                          onClick={senderUser?.is_bot && !senderUser?.is_webhook ? (e) => openBotCard(m.sender, e) : undefined}
-                        >
-                          <Avatar src={senderUser?.avatar} name={senderLabel} size={28} />
-                        </span>
-                        <span
-                          className="message-sender"
-                          style={{ color: colorForKey(m.sender), cursor: senderUser?.is_bot ? "pointer" : undefined }}
-                          onClick={senderUser?.is_bot && !senderUser?.is_webhook ? (e) => openBotCard(m.sender, e) : undefined}
-                        >
-                          {senderLabel}
-                        </span>
-                        {senderUser?.is_bot && !senderUser?.is_webhook && (
-                          <span className="bot-badge">BOT</span>
-                        )}
-                        {senderUser?.is_webhook && (
-                          <span className="bot-badge bot-badge--app">APP</span>
-                        )}
-                        {isEditing ? (
-                          <span className="message-edit">
-                            <input
-                              type="text"
-                              value={editingDraft}
-                              onChange={(e) => onSetEditingDraft(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") onSaveEdit();
-                                if (e.key === "Escape") onCancelEdit();
-                              }}
-                              autoFocus
-                            />
-                            <button onClick={onSaveEdit} className="btn-small">Save</button>
-                            <button onClick={onCancelEdit} className="btn-small btn-secondary-small">Cancel</button>
-                          </span>
-                        ) : (
-                          <>
-                            <span className="message-time" title={formatFullTimestamp(m.created_at)}>
-                              {formatRelative(m.created_at)}
-                            </span>
-                            <span className="message-content">
-                              <MessageContent content={m.content} knownNames={knownDisplayNames} myName={myDisplayName} />
-                            </span>
-                            {m.attachments && m.attachments.length > 0 && (
-                              <MessageAttachments items={m.attachments} onImageClick={onOpenImage} />
-                            )}
-                            {m.edited_at && (
-                              <span
-                                className="message-edited-tag"
-                                title={`Edited ${formatFullTimestamp(m.edited_at)}`}
-                              >
-                                (edited)
-                              </span>
-                            )}
-                            <span className="message-actions">
-                              <ReactionPicker onPick={(emoji) => onToggleReaction(m.id, emoji)} />
-                              <button className="message-action" onClick={() => onSetReplyTarget(m)} title="Reply" aria-label="Reply">
-                                ↩
-                              </button>
-                              <button
-                                className="message-action"
-                                onClick={async () => {
-                                  const hub = hubs.find((h) => h.hub_id === activeHubId);
-                                  if (!hub) return;
-                                  const link = `voxply://${hub.hub_url.replace(/^https?:\/\//, "")}/channel/${m.channel_id}/message/${m.id}`;
-                                  try {
-                                    await navigator.clipboard.writeText(link);
-                                    onToast("Link copied");
-                                  } catch (e) {
-                                    onError(String(e));
-                                  }
-                                }}
-                                title="Copy link"
-                                aria-label="Copy link"
-                              >
-                                🔗
-                              </button>
-                              {isMine && (
-                                <button className="message-action" onClick={() => onStartEdit(m)} title="Edit" aria-label="Edit">
-                                  ✎
-                                </button>
-                              )}
-                              {canDelete && (
-                                <button
-                                  className="message-action danger"
-                                  onClick={() => onDeleteMessage(m.id)}
-                                  title="Delete"
-                                  aria-label="Delete"
-                                >
-                                  ✕
-                                </button>
-                              )}
-                            </span>
-                            {m.reactions && m.reactions.length > 0 && (
-                              <MessageReactions
-                                reactions={m.reactions}
-                                onToggle={(emoji) => onToggleReaction(m.id, emoji)}
-                              />
-                            )}
-                            {m.embeds && m.embeds.length > 0 && (
-                              <MessageEmbeds embeds={m.embeds} />
-                            )}
-                            {m.components && m.components.length > 0 && (
-                              <MessageComponents
-                                rows={m.components}
-                                messageId={m.id}
-                                hubUrl={hubs.find((h) => h.hub_id === activeHubId)?.hub_url ?? ""}
-                                onInteract={handleComponentInteract}
-                              />
-                            )}
-                            {isEphemeral && (
-                              <div className="message-ephemeral-label">Only you can see this</div>
-                            )}
-                            {(m.reply_count ?? 0) > 0 && (
-                              <button className="thread-chip" onClick={() => toggleThread(m.id)}>
-                                {expandedThreads.has(m.id) ? "▾" : "▸"} {m.reply_count} {m.reply_count === 1 ? "reply" : "replies"}
-                              </button>
-                            )}
-                            {expandedThreads.has(m.id) && (
-                              <div className="thread-replies">
-                                {(threadReplies[m.id] ?? []).map(reply => (
-                                  <div key={reply.id} className="thread-reply">
-                                    <strong>{reply.sender_name ?? reply.sender.slice(0, 8)}</strong>: {reply.content}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-              <div ref={messagesEndRef} />
-            </div>
-            {firstNotifyingMessageId &&
-              messages.some((m) => m.id === firstNotifyingMessageId) && (
-              <button
-                className="jump-to-bottom jump-to-notification"
-                onClick={() => {
-                  onScrollToMessage(firstNotifyingMessageId);
-                  onClearFirstNotify();
-                }}
-              >
-                ↑ Jump to first notification
-              </button>
-            )}
-            {!stickToBottom && newWhileScrolledUp > 0 && (
-              <button className="jump-to-bottom" onClick={onJumpToBottom}>
-                ↓ {newWhileScrolledUp} new
-              </button>
-            )}
-            <TypingIndicator typers={Object.values(typingByKey)} />
-            {replyTarget && (
-              <div className="reply-banner">
-                <span className="muted">Replying to </span>
-                <strong>
-                  {users.find((u) => u.public_key === replyTarget.sender)?.display_name ||
-                    replyTarget.sender_name ||
-                    formatPubkey(replyTarget.sender)}
-                </strong>
-                <span className="reply-snippet">{replyTarget.content.slice(0, 80)}</span>
-                <button className="reply-banner-close" onClick={() => onSetReplyTarget(null)} title="Cancel reply" aria-label="Cancel reply">
-                  ×
-                </button>
-              </div>
-            )}
-            {pendingAttachments.length > 0 && (
-              <PendingAttachments
-                items={pendingAttachments}
-                onRemove={(i) => onSetPendingAttachments(pendingAttachments.filter((_, idx) => idx !== i))}
-              />
-            )}
-            <div
-              className="input-area"
-              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
-              onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length > 0) onAttachFiles(e.dataTransfer.files); }}
-            >
-              <label className="btn-attach" title="Attach file">
-                📎
-                <input
-                  type="file"
-                  multiple
-                  style={{ display: "none" }}
-                  onChange={(e) => { onAttachFiles(e.target.files); (e.target as HTMLInputElement).value = ""; }}
-                />
-              </label>
-              <EmojiPicker
-                hubUrl={hubs.find((h) => h.hub_id === activeHubId)?.hub_url}
-                onPick={(text) => onInputTextChange(inputText + text)}
-              />
-              <div style={{ position: "relative", flex: 1 }}>
-                {slashSuggestions.length > 0 && (
-                  <div className="slash-command-popup">
-                    {slashSuggestions.map((s, i) => (
-                      <div
-                        key={s.command}
-                        className={`slash-command-item${i === slashSelectedIdx ? " selected" : ""}`}
-                        onMouseDown={(e) => { e.preventDefault(); fillSlashCommand(s.command); }}
-                      >
-                        <span className="slash-command-name">/{s.command}</span>
-                        <span className="slash-command-desc">{s.description}</span>
-                        <span className="slash-command-bot">{s.bot_name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <input
-                  ref={messageInputRef}
-                  type="text"
-                  value={inputText}
-                  style={{ width: "100%" }}
-                  onChange={(e) => { handleSlashInputChange(e.target.value); if (e.target.value.length > 0) onPingTyping(); }}
-                  onKeyDown={handleSlashKeyDown}
-                  placeholder={
-                    replyTarget
-                      ? `Reply to ${users.find((u) => u.public_key === replyTarget.sender)?.display_name ?? "user"}`
-                      : `Message #${selectedChannel.name}`
-                  }
-                />
-              </div>
-              <button onClick={onSend}>Send</button>
-            </div>
+            <ChannelHeader
+              selectedChannel={selectedChannel}
+              voiceChannelId={voiceChannelId}
+              memberSidebarHidden={memberSidebarHidden}
+              searchOpen={searchOpen}
+              searchQuery={searchQuery}
+              searchResults={searchResults}
+              activeScreenShares={activeScreenShares}
+              screenShareViewerRef={screenShareViewerRef}
+              sharing={sharing}
+              shareKbps={shareKbps}
+              isAdmin={isAdmin}
+              onVoiceJoin={onVoiceJoin}
+              onVoiceLeave={onVoiceLeave}
+              onToggleSearch={() => searchOpen ? onCloseSearch() : onSetSearchOpen(true)}
+              onCloseSearch={onCloseSearch}
+              onSetSearchQuery={onSetSearchQuery}
+              onToggleMemberSidebar={() => onSetMemberSidebarHidden(!memberSidebarHidden)}
+              onOpenEditDescription={onOpenEditDescription}
+              onStopShare={onStopShare}
+            />
+            <ChannelMessageList
+              selectedChannelName={selectedChannel.name}
+              selectedChannelDescription={selectedChannel.description}
+              messages={messages}
+              searchResults={searchResults}
+              blockedUsers={blockedUsers}
+              publicKey={publicKey}
+              myDisplayName={myDisplayName}
+              myRoles={myRoles}
+              users={users}
+              knownDisplayNames={knownDisplayNames}
+              editingMessageId={editingMessageId}
+              editingDraft={editingDraft}
+              expandedThreads={expandedThreads}
+              threadReplies={threadReplies}
+              hubs={hubs}
+              activeHubId={activeHubId}
+              isAdmin={isAdmin}
+              stickToBottom={stickToBottom}
+              newWhileScrolledUp={newWhileScrolledUp}
+              firstNotifyingMessageId={firstNotifyingMessageId}
+              typingByKey={typingByKey}
+              messagesContainerRef={messagesContainerRef}
+              messagesEndRef={messagesEndRef}
+              onToggleReaction={onToggleReaction}
+              onSetReplyTarget={onSetReplyTarget}
+              onSaveEdit={onSaveEdit}
+              onCancelEdit={onCancelEdit}
+              onStartEdit={onStartEdit}
+              onDeleteMessage={onDeleteMessage}
+              onSetEditingDraft={onSetEditingDraft}
+              onScrollToMessage={onScrollToMessage}
+              onToast={onToast}
+              onError={onError}
+              onToggleThread={toggleThread}
+              onOpenImage={onOpenImage}
+              onOpenBotCard={openBotCard}
+              onMessagesScroll={onMessagesScroll}
+              onJumpToBottom={onJumpToBottom}
+              onClearFirstNotify={onClearFirstNotify}
+              onComponentInteract={handleComponentInteract}
+            />
+            <ChannelComposer
+              channelName={selectedChannel.name}
+              activeHubUrl={activeHub?.hub_url}
+              inputText={inputText}
+              replyTarget={replyTarget}
+              pendingAttachments={pendingAttachments}
+              users={users}
+              publicKey={publicKey}
+              slashSuggestions={slashSuggestions}
+              slashSelectedIdx={slashSelectedIdx}
+              messageInputRef={messageInputRef}
+              onInputTextChange={handleSlashInputChange}
+              onKeyDown={handleSlashKeyDown}
+              onSend={onSend}
+              onPingTyping={onPingTyping}
+              onAttachFiles={onAttachFiles}
+              onSetPendingAttachments={onSetPendingAttachments}
+              onSetReplyTarget={onSetReplyTarget}
+              onFillSlashCommand={fillSlashCommand}
+            />
           </>
         ) : selectedAllianceChannel ? (
-          <>
-            <div className="channel-header">
-              <div className="channel-header-info">
-                <h3># {selectedAllianceChannel.channel.channel_name}</h3>
-                <p className="channel-description">
-                  🤝 {selectedAllianceChannel.alliance_name} · hosted on{" "}
-                  {selectedAllianceChannel.channel.hub_name}
-                </p>
-              </div>
-            </div>
-            <div className="messages">
-              {allianceMessages.map((m) => {
-                const senderLabel = m.sender_name || formatPubkey(m.sender);
-                return (
-                  <div key={m.id} className="message">
-                    <Avatar src={null} name={senderLabel} size={28} />
-                    <span className="message-sender" style={{ color: colorForKey(m.sender) }}>
-                      {senderLabel}
-                    </span>
-                    <span className="message-content">
-                      <MessageContent content={m.content} knownNames={knownDisplayNames} myName={myDisplayName} />
-                    </span>
-                    {m.attachments && m.attachments.length > 0 && (
-                      <MessageAttachments items={m.attachments} onImageClick={onOpenImage} />
-                    )}
-                    <span className="message-time" title={formatFullTimestamp(m.created_at)}>
-                      {formatRelative(m.created_at)}
-                    </span>
-                  </div>
-                );
-              })}
-              {allianceMessages.length === 0 && (
-                <p className="muted" style={{ padding: "1rem" }}>
-                  No messages yet in this alliance channel.
-                </p>
-              )}
-            </div>
-            <div className="input-area">
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => onInputTextChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSendAllianceMessage(); }
-                }}
-                placeholder={`Message ${selectedAllianceChannel.channel.hub_name} · #${selectedAllianceChannel.channel.channel_name}`}
-              />
-              <button onClick={onSendAllianceMessage}>Send</button>
-            </div>
-          </>
+          <AllianceView
+            selectedAllianceChannel={selectedAllianceChannel}
+            allianceMessages={allianceMessages}
+            inputText={inputText}
+            knownDisplayNames={knownDisplayNames}
+            myDisplayName={myDisplayName}
+            onInputTextChange={onInputTextChange}
+            onSendAllianceMessage={onSendAllianceMessage}
+            onOpenImage={onOpenImage}
+          />
         ) : (
           <div className="no-channel"><p>Select a channel to start chatting</p></div>
         )}
