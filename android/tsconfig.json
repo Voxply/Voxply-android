@@ -17,7 +17,8 @@
       "@shared/constants": ["../voxply-desktop/src/constants"],
       "@platform": ["../voxply-web/src/platform/index"],
       "@identity/*": ["../voxply-web/src/identity/*"],
-      "@voxply/i18n": ["../voxply-web/i18n/index.ts"]
+      "@voxply/i18n": ["../voxply-web/i18n/index.ts"],
+      "@voxply/utils": ["../voxply-web/utils/index.ts"]
     }
   },
   "include": [

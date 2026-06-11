@@ -22,6 +22,7 @@
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-store": "^2",
     "@voxply/i18n": "file:../voxply-web/i18n",
+    "@voxply/utils": "file:../voxply-web/utils",
     "i18next": "^24.2.3",
     "i18next-icu": "^2.4.3",
     "idb": "^8.0.0",

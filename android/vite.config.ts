@@ -14,6 +14,7 @@ export default defineConfig({
       "@platform": resolve(__dirname, "../voxply-web/src/platform/index.ts"),
       "@identity": resolve(__dirname, "../voxply-web/src/identity"),
       "@voxply/i18n": resolve(__dirname, "../voxply-web/i18n/index.ts"),
+      "@voxply/utils": resolve(__dirname, "../voxply-web/utils/index.ts"),
     },
   },
   server: {

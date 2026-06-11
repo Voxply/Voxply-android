@@ -29,8 +29,8 @@ import { ContentArea } from "@components/ContentArea";
 import { AddHubModal } from "@components/AddHubModal";
 import { MobileShell } from "@components/MobileShell";
 import type { MobileShellHandle } from "@components/MobileShell";
-import { buildChannelTree } from "@shared/utils/channels";
-import type { TreeNode } from "@shared/utils/channels";
+import { buildChannelTree } from "@voxply/utils";
+import type { TreeNode } from "@voxply/utils";
 import type { ScreenShareViewerRef } from "@components/ScreenShareViewer";
 import {
   restorePersistedHubs,
